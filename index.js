@@ -180,7 +180,7 @@ function createHallwayPayload() {
     .setDescription(
       "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
       "✨ **6 Doors** lead to grand party games...\n" +
-      "💀 **6 Doors** lead to chaotic tricks & madness.\n\n" +
+      "💀 **7 Doors** lead to chaotic tricks & madness.\n\n" +
       "*Choose your door wisely, mortal...*"
     )
     .setColor("#800020")
