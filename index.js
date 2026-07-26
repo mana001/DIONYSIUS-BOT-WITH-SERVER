@@ -62,17 +62,17 @@ function isAuthorized(member, user) {
 }
 
 // -------------------------------------------------------------
-// 3. LOCAL ASSETS & GAME DATA MAPPING (5 Games & 7 Tricks = 12 Doors)
+// 3. LOCAL ASSETS & GAME DATA MAPPING (6 Games & 6 Tricks = 12 Doors)
 // -------------------------------------------------------------
 const ASSETS = {
   HALLWAY_IMAGE: path.join(__dirname, 'assets', 'hallway.png'),
   
-  // 💀 TRICKS MAPPED TO EXACT LOCAL FILES & NICKNAMES (7 Tricks)
+  // 💀 6 TRICKS MAPPED TO EXACT LOCAL FILES & NICKNAMES
   TRICKS: [
     { 
       nickname: "GRANPA CHASER 👴", 
       image: null, 
-      gif: path.join(__dirname, 'assets', 'gif4.webp') 
+      gif: path.join(__dirname, 'assets', 'gif4.gif') 
     },
     { 
       nickname: "FOSTER FAIL 🥀", 
@@ -90,11 +90,6 @@ const ASSETS = {
       gif: path.join(__dirname, 'assets', 'gif7.gif') 
     },
     { 
-      nickname: "MR.POOTY 😬", 
-      image: null, 
-      gif: path.join(__dirname, 'assets', 'gif1.gif') 
-    },
-    { 
       nickname: "THE REAL RAG DOLL 🪆", 
       image: null, 
       gif: path.join(__dirname, 'assets', 'gif2.gif') 
@@ -102,7 +97,7 @@ const ASSETS = {
     { 
       nickname: "Sir Shits-A-Lot", 
       image: null, 
-      gif: path.join(__dirname, 'assets', 'gif3.webp') 
+      gif: path.join(__dirname, 'assets', 'gif3.gif') 
     }
   ]
 };
@@ -116,7 +111,7 @@ const TRICK_QUOTES = [
 ];
 
 // -------------------------------------------------------------
-// 📋 GAMES LIST (5 Games with Custom GIFs including WOULD YOU RATHER?)
+// 📋 6 GAMES LIST 
 // -------------------------------------------------------------
 const GAMES_LIST = [
   { 
@@ -135,13 +130,19 @@ const GAMES_LIST = [
     name: "FACT OR FICTION? 📜", 
     description: "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif10.webp')
+    gif: path.join(__dirname, 'assets', 'gif10.gif')
   },
   { 
     name: "HOT SEAT 🔥", 
     description: "You are on the Hot Seat! ANSWER THE QUESTION WITH THE FIRST PERSON WHO COMES TO MIND! IT'S HOT HOT🌡🛀🔥🌶",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif11.webp')
+    gif: path.join(__dirname, 'assets', 'gif11.gif')
+  },
+  { 
+    name: "WHO SAID IT? 🗣️", 
+    description: "The host will show you a random out-of-context quote from the server history. Guess who said it!",
+    image: null,
+    gif: path.join(__dirname, 'assets', 'gif12.gif')
   },
   { 
     name: "WOULD YOU RATHER? 🤔", 
@@ -163,20 +164,20 @@ function shuffle(array) {
 
 function createHallwayPayload() {
   const doors = [
-    // 5 Games
+    // 6 Games
     { type: 'GAME', data: GAMES_LIST[0], used: false },
     { type: 'GAME', data: GAMES_LIST[1], used: false },
     { type: 'GAME', data: GAMES_LIST[2], used: false },
     { type: 'GAME', data: GAMES_LIST[3], used: false },
     { type: 'GAME', data: GAMES_LIST[4], used: false },
-    // 7 Tricks
+    { type: 'GAME', data: GAMES_LIST[5], used: false },
+    // 6 Tricks
     { type: 'TRICK', data: ASSETS.TRICKS[0], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[1], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[2], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[3], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[4], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[5], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[6], used: false }
+    { type: 'TRICK', data: ASSETS.TRICKS[5], used: false }
   ];
 
   shuffle(doors);
@@ -186,8 +187,8 @@ function createHallwayPayload() {
     .setTitle("🍷 Domain of Dionysius 🎭")
     .setDescription(
       "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
-      "✨ **5 Doors** lead to grand party games...\n" +
-      "💀 **7 Doors** lead to chaotic tricks & madness.\n\n" +
+      "✨ **6 Doors** lead to grand party games...\n" +
+      "💀 **6 Doors** lead to chaotic tricks & madness.\n\n" +
       "*Choose your door wisely, mortal...*"
     )
     .setColor("#800020")
@@ -328,7 +329,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       const gifName = path.basename(trickData.gif);
       trickEmbed.setImage(`attachment://${gifName}`);
       files.push(new AttachmentBuilder(trickData.gif));
-      embeds.push(gifEmbed);
+      embeds.push(trickEmbed);
     } else {
       embeds.push(trickEmbed);
     }
