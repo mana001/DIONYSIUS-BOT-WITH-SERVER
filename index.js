@@ -306,7 +306,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
     const trickEmbed = new EmbedBuilder()
       .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
       .setDescription(
-        `Host ${user} opened a dark door and Dionysius targeted the Birthday Boy!\n\n` +
+        `A dark door was opened and Dionysius targeted the Birthday Boy!\n\n` +
         `🎂 **Victim:** ${targetMember ? targetMember : "No Birthday Boy found!"}\n` +
         (nickChanged 
           ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}**!` 
