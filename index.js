@@ -73,26 +73,26 @@ const ASSETS = {
   HALLWAY_IMAGE: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000",
   DEFAULT_GAME_IMAGE: "https://media.giphy.com/media/l2JIdnF6aJzAqzByo/giphy.gif",
   
-  // 📸 TRICK IMAGES
+// 📸 TRICK IMAGES (Must end in .png, .jpg, or .gif)
   TRICK_IMAGES: [
-    "https://i.ibb.co/RTBVdydK/ae5947fd-c8a1-4ad2-bb8a-5fbefab03011.png",  // Trick 1 Pic
-    "https://i.ibb.co/yHXnyT3/03157239-c73c-4a06-a7ed-9600bfdedada.png",   // Trick 2 Pic
-    "https://i.ibb.co/mFFQ3T9V/2cdb2222-7e40-49d9-ada7-6f5cdae57299.png",   // Trick 3 Pic
-    null,                                                                  // Trick 4 Pic
-    null,                                                                  // Trick 5 Pic
-    null,                                                                  // Trick 6 Pic
-    null                                                                   // Trick 7 Pic
+    "https://i.ibb.co/RTBVdydK/ae5947fd-c8a1-4ad2-bb8a-5fbefab03011.png",
+    "https://i.ibb.co/yHXnyT3/03157239-c73c-4a06-a7ed-9600bfdedada.png",
+    "https://i.ibb.co/mFFQ3T9V/2cdb2222-7e40-49d9-ada7-6f5cdae57299.png",
+    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",
+    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",
+    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",
+    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"
   ],
 
   // 🎬 TRICK SPECIFIC GIFS
   TRICK_GIFS: [
-    "https://media.giphy.com/media/0SVAVxeJsnJ1WRMIPX/giphy.gif", // Trick 1 GIF
-    "https://media.giphy.com/media/hTwNnrHNl4rlK/giphy.gif",       // Trick 2 GIF
-    "https://media.giphy.com/media/2g6sCTsSoVuSfSxK4W/giphy.gif",  // Trick 3 GIF
-    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",  // Trick 4 GIF
-    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",  // Trick 5 GIF
-    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",  // Trick 6 GIF
-    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"        // Trick 7 GIF
+    "https://media.giphy.com/media/0SVAVxeJsnJ1WRMIPX/giphy.gif",
+    "https://media.giphy.com/media/hTwNnrHNl4rlK/giphy.gif",
+    "https://media.giphy.com/media/2g6sCTsSoVuSfSxK4W/giphy.gif",
+    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",
+    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",
+    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",
+    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"
   ],
 
   // 🎭 SPECIFIC TRICK NICKNAMES
@@ -460,7 +460,7 @@ client.on('interactionCreate', async (interaction) => {
     return;
   }
 
-  // B) BUTTON CLICK HANDLING (DOORS)
+// B) BUTTON CLICK HANDLING (DOORS)
   if (interaction.isButton()) {
     if (!isAuthorized(interaction.member, interaction.user)) {
       return interaction.reply({ 
@@ -469,10 +469,13 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
+    // ⚡ DEFER REPLY: Tells Discord the bot is working (prevents 3-second timeout)
+    await interaction.deferReply();
+
     const session = activeChannels.get(interaction.channelId);
 
     if (!session) {
-      return interaction.reply({ 
+      return interaction.followUp({ 
         content: "🎭 This hallway has faded into ancient history. Summon a new one with `/domain`!", 
         ephemeral: true 
       });
@@ -482,17 +485,21 @@ client.on('interactionCreate', async (interaction) => {
     const result = await processDoorUnlock(session, doorIndex, interaction.member, interaction.user);
 
     if (!result.success && result.reason === "ALREADY_OPEN") {
-      return interaction.reply({ 
+      return interaction.followUp({ 
         content: "🚪 This door has already been unsealed! Choose another.", 
         ephemeral: true 
       });
     }
 
     // Update current board message components
-    await interaction.message.edit({ components: session.components });
+    try {
+      await interaction.message.edit({ components: session.components });
+    } catch (e) {
+      console.log("Could not update board visually:", e);
+    }
 
     // Send the reveal result
-    await interaction.reply({ embeds: result.embeds });
+    await interaction.followUp({ embeds: result.embeds });
   }
 });
 
