@@ -35,7 +35,7 @@ const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 // 👑 PERMISSIONS CONFIGURATION
 // -------------------------------------------------------------
 // NOTE: Right-click your profile in Discord -> "Copy User ID" to get your numeric ID!
-const OWNER_ID = "0ladybunny"; 
+const OWNER_ID = "726748866023784490"; 
 
 const REQUIRED_ROLE_NAME = "HOST B";
 
