@@ -3,6 +3,7 @@
 // -------------------------------------------------------------
 const express = require('express');
 const https = require('https');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -31,7 +32,8 @@ const {
   EmbedBuilder, 
   ActionRowBuilder, 
   ButtonBuilder, 
-  ButtonStyle 
+  ButtonStyle,
+  AttachmentBuilder 
 } = require('discord.js');
 
 const client = new Client({
@@ -48,105 +50,102 @@ const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 // -------------------------------------------------------------
 // 👑 PERMISSIONS CONFIGURATION
 // -------------------------------------------------------------
-// ⚠️ Replace this string with your numeric Discord User ID (e.g., "123456789012345678")
 const OWNER_ID = "YOUR_NUMERIC_DISCORD_USER_ID"; 
-
 const REQUIRED_ROLE_NAME = "HOST B";
 
-// Helper function to check permissions
 function isAuthorized(member, user) {
-  // 1. You (the owner) ALWAYS have access!
   if (user && user.id === OWNER_ID) return true;
-
-  // 2. Anyone with the "HOST B" role also gets access
   if (member && member.roles) {
     return member.roles.cache.some(role => role.name === REQUIRED_ROLE_NAME);
   }
-
   return false;
 }
 
 // -------------------------------------------------------------
-// 3. ASSETS & GAME DATA
+// 3. LOCAL ASSETS & GAME DATA MAPPING
 // -------------------------------------------------------------
 const ASSETS = {
-  HALLWAY_IMAGE: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000",
-  DEFAULT_GAME_IMAGE: "https://media.giphy.com/media/l2JIdnF6aJzAqzByo/giphy.gif",
+  HALLWAY_IMAGE: path.join(__dirname, 'assets', 'hallway.jpg'),
   
-// 📸 TRICK IMAGES (Must end in .png, .jpg, or .gif)
-  TRICK_IMAGES: [
-    "https://i.ibb.co/RTBVdydK/ae5947fd-c8a1-4ad2-bb8a-5fbefab03011.png",
-    "https://i.ibb.co/yHXnyT3/03157239-c73c-4a06-a7ed-9600bfdedada.png",
-    "https://i.ibb.co/mFFQ3T9V/2cdb2222-7e40-49d9-ada7-6f5cdae57299.png",
-    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",
-    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",
-    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",
-    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"
-  ],
-
-  // 🎬 TRICK SPECIFIC GIFS
-  TRICK_GIFS: [
-    "https://media.giphy.com/media/0SVAVxeJsnJ1WRMIPX/giphy.gif",
-    "https://media.giphy.com/media/hTwNnrHNl4rlK/giphy.gif",
-    "https://media.giphy.com/media/2g6sCTsSoVuSfSxK4W/giphy.gif",
-    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",
-    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",
-    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",
-    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"
-  ],
-
-  // 🎭 SPECIFIC TRICK NICKNAMES
-  TRICK_NICKNAMES: [
-    "FOSTER FAIL 🥀",
-    "ROBERT CARTER FELONI",
-    "Goblin Snack 🥒",
-    "MR.POOTY 😬",
-    "THE REAL RAG DOLL 🪆",
-    "Sir Shits-A-Lot 🕵",
-    "GRANPA CHASER 👹"
+  // 💀 TRICKS MAPPED TO LOCAL FILES & EXACT NICKNAMES (6 Tricks)
+  TRICKS: [
+    { 
+      nickname: "FOSTER FAIL 🥀", 
+      image: path.join(__dirname, 'assets', 'img1.png'), 
+      gif: path.join(__dirname, 'assets', 'gif5.png') 
+    },
+    { 
+      nickname: "ROBERT CARTER FELONI", 
+      image: path.join(__dirname, 'assets', 'img2.png'), 
+      gif: path.join(__dirname, 'assets', 'gif6.gif') 
+    },
+    { 
+      nickname: "Goblin Snack 🥒", 
+      image: path.join(__dirname, 'assets', 'img3.png'), 
+      gif: path.join(__dirname, 'assets', 'gif7.gif') 
+    },
+    { 
+      nickname: "MR.POOTY 😬", 
+      image: null, 
+      gif: path.join(__dirname, 'assets', 'gif1.gif') 
+    },
+    { 
+      nickname: "THE REAL RAG DOLL 🪆", 
+      image: null, 
+      gif: path.join(__dirname, 'assets', 'gif2.gif') 
+    },
+    { 
+      nickname: "Sir Shits-A-Lot", 
+      image: null, 
+      gif: path.join(__dirname, 'assets', 'gif3.gif') 
+    }
   ]
 };
 
 // -------------------------------------------------------------
-// 📋 GAMES LIST (5 Games with Custom Images & GIFs)
+// 📋 GAMES LIST (6 Games with Custom GIFs)
 // -------------------------------------------------------------
 const GAMES_LIST = [
   { 
     name: "EMOJI STORY 🎭", 
     description: "Tell a short story using **ONLY EMOJIS**. Vagg has to guess what happened!",
     image: null,
-    gif: "https://media.giphy.com/media/519ChzMeyx4pa/giphy.gif"
+    gif: path.join(__dirname, 'assets', 'gif8.gif')
   },
   { 
-    name: "HOW WELL DO YOU KNOW YOUR CLIQUE? 👥", 
+    name: "HOW WELL DO YOU KNOW YOUR CLICK? 👥", 
     description: "You have to answer questions about your click!",
     image: null,
-    gif: "https://media.giphy.com/media/hW4iRJRU1rsfXve2Is/giphy.gif"
+    gif: path.join(__dirname, 'assets', 'gif9.gif')
   },
   { 
     name: "FACT OR FICTION? 📜", 
     description: "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
     image: null,
-    gif: "https://media.giphy.com/media/BQUITFiYVtNte/giphy.gif"
+    gif: path.join(__dirname, 'assets', 'gif10.gif')
   },
   { 
     name: "HOT SEAT 🔥", 
     description: "You are on the Hot Seat! ANSWER THE QUESTION WITH THE FIRST PERSON WHO COMES TO MIND! IT'S HOT HOT🌡🛀🔥🌶",
     image: null,
-    gif: "https://media.giphy.com/media/SmWymjSauhddFrFIOi/giphy.gif"
+    gif: path.join(__dirname, 'assets', 'gif11.gif')
   },
   { 
     name: "WHO SAID IT? 🗣️", 
     description: "The host will show you a random out-of-context quote from the server history. Guess who said it!",
     image: null,
-    gif: "https://media.giphy.com/media/13l7rl15fX3s2I/giphy.gif"
+    gif: path.join(__dirname, 'assets', 'gif12.gif')
+  },
+  { 
+    name: "WOULD YOU RATHER? 🤔", 
+    description: "Choose between two difficult or hilarious dilemmas and defend your choice!",
+    image: null,
+    gif: path.join(__dirname, 'assets', 'gif13.gif')
   }
 ];
 
-// Map to track active hallway per channel
 const activeChannels = new Map();
 
-// 🔀 True Fisher-Yates Unbiased Random Shuffle
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -155,38 +154,37 @@ function shuffle(array) {
   return array;
 }
 
-// Helper function to build hallway embed with 12 RANDOMLY MIXED DOORS
 function createHallwayPayload() {
   const doors = [
-    // 🎲 5 Games
+    // 6 Games
     { type: 'GAME', data: GAMES_LIST[0], used: false },
     { type: 'GAME', data: GAMES_LIST[1], used: false },
     { type: 'GAME', data: GAMES_LIST[2], used: false },
     { type: 'GAME', data: GAMES_LIST[3], used: false },
     { type: 'GAME', data: GAMES_LIST[4], used: false },
-
-    // 💀 7 Tricks
-    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[0], gif: ASSETS.TRICK_GIFS[0], nickname: ASSETS.TRICK_NICKNAMES[0], used: false },
-    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[1], gif: ASSETS.TRICK_GIFS[1], nickname: ASSETS.TRICK_NICKNAMES[1], used: false },
-    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[2], gif: ASSETS.TRICK_GIFS[2], nickname: ASSETS.TRICK_NICKNAMES[2], used: false },
-    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[3], gif: ASSETS.TRICK_GIFS[3], nickname: ASSETS.TRICK_NICKNAMES[3], used: false },
-    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[4], gif: ASSETS.TRICK_GIFS[4], nickname: ASSETS.TRICK_NICKNAMES[4], used: false },
-    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[5], gif: ASSETS.TRICK_GIFS[5], nickname: ASSETS.TRICK_NICKNAMES[5], used: false },
-    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[6], gif: ASSETS.TRICK_GIFS[6], nickname: ASSETS.TRICK_NICKNAMES[6], used: false }
+    { type: 'GAME', data: GAMES_LIST[5], used: false },
+    // 6 Tricks
+    { type: 'TRICK', data: ASSETS.TRICKS[0], used: false },
+    { type: 'TRICK', data: ASSETS.TRICKS[1], used: false },
+    { type: 'TRICK', data: ASSETS.TRICKS[2], used: false },
+    { type: 'TRICK', data: ASSETS.TRICKS[3], used: false },
+    { type: 'TRICK', data: ASSETS.TRICKS[4], used: false },
+    { type: 'TRICK', data: ASSETS.TRICKS[5], used: false }
   ];
 
   shuffle(doors);
 
+  const hallwayAttachment = new AttachmentBuilder(ASSETS.HALLWAY_IMAGE);
   const hallwayEmbed = new EmbedBuilder()
     .setTitle("🍷 Domain of Dionysius 🎭")
     .setDescription(
       "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
-      "✨ **5 Doors** lead to grand party games...\n" +
-      "💀 **7 Doors** lead to chaotic tricks & madness.\n\n" +
+      "✨ **6 Doors** lead to grand party games...\n" +
+      "💀 **6 Doors** lead to chaotic tricks & madness.\n\n" +
       "*Choose your door wisely, mortal...*"
     )
     .setColor("#800020")
-    .setImage(ASSETS.HALLWAY_IMAGE)
+    .setImage(`attachment://${path.basename(ASSETS.HALLWAY_IMAGE)}`)
     .setFooter({ text: "Dionysius is watching • Auto-following chat" });
 
   const row1 = new ActionRowBuilder();
@@ -205,11 +203,16 @@ function createHallwayPayload() {
     else row3.addComponents(button);
   }
 
-  return { embed: hallwayEmbed, components: [row1, row2, row3], doors: doors };
+  return { 
+    embed: hallwayEmbed, 
+    components: [row1, row2, row3], 
+    doors: doors, 
+    files: [hallwayAttachment] 
+  };
 }
 
 // -------------------------------------------------------------
-// CORE DOOR UNLOCK LOGIC (Shared between Button & Chat Command)
+// CORE DOOR UNLOCK LOGIC
 // -------------------------------------------------------------
 async function processDoorUnlock(session, doorIndex, member, user) {
   const selectedDoor = session.doors[doorIndex];
@@ -220,7 +223,6 @@ async function processDoorUnlock(session, doorIndex, member, user) {
 
   selectedDoor.used = true;
 
-  // Update button visual state across all 3 rows
   session.components = session.components.map(row => {
     const newRow = ActionRowBuilder.from(row);
     newRow.components.forEach(button => {
@@ -234,8 +236,8 @@ async function processDoorUnlock(session, doorIndex, member, user) {
   });
 
   const embeds = [];
+  const files = [];
 
-  // Outcome A: Game Door
   if (selectedDoor.type === 'GAME') {
     const game = selectedDoor.data;
 
@@ -250,46 +252,51 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       .setColor("#FFD700")
       .setFooter({ text: "Let the festivities begin!" });
 
-    const primaryImage = game.image || ASSETS.DEFAULT_GAME_IMAGE;
-    gameEmbed.setImage(primaryImage);
+    if (game.image) {
+      const imgName = path.basename(game.image);
+      gameEmbed.setImage(`attachment://${imgName}`);
+      files.push(new AttachmentBuilder(game.image));
+    }
     embeds.push(gameEmbed);
 
     if (game.gif) {
+      const gifName = path.basename(game.gif);
       const gifEmbed = new EmbedBuilder()
         .setColor("#FFD700")
-        .setImage(game.gif);
+        .setImage(`attachment://${gifName}`);
+      files.push(new AttachmentBuilder(game.gif));
       embeds.push(gifEmbed);
     }
   } 
-  // Outcome B: Trick Door
   else if (selectedDoor.type === 'TRICK') {
-    const targetNickname = selectedDoor.nickname;
+    const trickData = selectedDoor.data;
+    const targetNickname = trickData.nickname;
     const guild = member.guild;
     
-    // Fetch all members to ensure role caching works
-    await guild.members.fetch();
-
-    // Find the "BIRTHDAY BOY" role
-    const birthdayRole = guild.roles.cache.find(
-      r => r.name.toLowerCase() === "birthday boy"
-    );
-
     let targetMember = null;
     let nickChanged = false;
 
-    // Pick a member with the Birthday Boy role
-    if (birthdayRole && birthdayRole.members.size > 0) {
-      targetMember = birthdayRole.members.random();
+    try {
+      await guild.roles.fetch();
+      const birthdayRole = guild.roles.cache.find(
+        r => r.name.toLowerCase() === "birthday boy"
+      );
+
+      if (birthdayRole) {
+        await birthdayRole.members.fetch();
+        if (birthdayRole.members.size > 0) {
+          targetMember = birthdayRole.members.random();
+        }
+      }
+    } catch (e) {
+      console.log("Could not fetch role or members:", e);
     }
 
-    // Change the Birthday Boy's nickname
     if (targetMember) {
       try {
         if (targetMember.manageable) {
           await targetMember.setNickname(targetNickname);
           nickChanged = true;
-        } else {
-          console.log("Could not change Birthday Boy's nickname due to role hierarchy.");
         }
       } catch (err) {
         console.log("Failed to change nickname:", err);
@@ -307,24 +314,34 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       )
       .setColor("#FF0000");
 
-    if (selectedDoor.image) {
-      trickEmbed.setImage(selectedDoor.image);
+    if (trickData.image) {
+      const imgName = path.basename(trickData.image);
+      trickEmbed.setImage(`attachment://${imgName}`);
+      files.push(new AttachmentBuilder(trickData.image));
       embeds.push(trickEmbed);
 
-      const gifEmbed = new EmbedBuilder()
-        .setColor("#FF0000")
-        .setImage(selectedDoor.gif);
-      embeds.push(gifEmbed);
+      if (trickData.gif) {
+        const gifName = path.basename(trickData.gif);
+        const gifEmbed = new EmbedBuilder()
+          .setColor("#FF0000")
+          .setImage(`attachment://${gifName}`);
+        files.push(new AttachmentBuilder(trickData.gif));
+        embeds.push(gifEmbed);
+      }
+    } else if (trickData.gif) {
+      const gifName = path.basename(trickData.gif);
+      trickEmbed.setImage(`attachment://${gifName}`);
+      files.push(new AttachmentBuilder(trickData.gif));
+      embeds.push(trickEmbed);
     } else {
-      trickEmbed.setImage(selectedDoor.gif);
       embeds.push(trickEmbed);
     }
   }
-  return { success: true, embeds: embeds };
+  return { success: true, embeds, files };
 }
 
 // -------------------------------------------------------------
-// 4. BOT READY EVENT & SLASH COMMAND REGISTRATION
+// 4. BOT READY EVENT
 // -------------------------------------------------------------
 client.once('ready', async () => {
   console.log(`🍷 Dionysius has awakened as ${client.user.tag}!`);
@@ -342,14 +359,13 @@ client.once('ready', async () => {
 });
 
 // -------------------------------------------------------------
-// 5. MESSAGE LISTENER (Commands, Chat Door Unlocking & Auto-Bump)
+// 5. MESSAGE LISTENER
 // -------------------------------------------------------------
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
   const content = message.content.toLowerCase().trim();
 
-  // A) SUMMON COMMANDS (!domain or !doors)
   if (content === '!domain' || content === '!doors') {
     if (!isAuthorized(message.member, message.author)) {
       return message.reply(`⛔ You do not have permission to control Dionysius!`);
@@ -358,7 +374,8 @@ client.on('messageCreate', async (message) => {
     const payload = createHallwayPayload();
     const sentMessage = await message.channel.send({
       embeds: [payload.embed],
-      components: payload.components
+      components: payload.components,
+      files: payload.files
     });
 
     activeChannels.set(message.channel.id, {
@@ -366,16 +383,14 @@ client.on('messageCreate', async (message) => {
       doors: payload.doors,
       components: payload.components,
       embed: payload.embed,
+      files: payload.files,
       count: 0
     });
     return;
   }
 
-  // B) CHAT DOOR UNLOCKING (e.g., typing "1", "7", "12" or "door 5")
   if (activeChannels.has(message.channel.id)) {
     const session = activeChannels.get(message.channel.id);
-
-    // Check if the message is a number between 1 and 12 (or "door X")
     const doorMatch = content.match(/^(?:door\s*)?([1-9]|1[0-2])$/i);
 
     if (doorMatch) {
@@ -392,7 +407,6 @@ client.on('messageCreate', async (message) => {
         return message.reply(`🚪 Door #${doorNum} has already been opened! Pick another.`);
       }
 
-      // Update original hallway board message with newly disabled button
       try {
         const boardMsg = await message.channel.messages.fetch(session.messageId);
         if (boardMsg) await boardMsg.edit({ components: session.components });
@@ -400,12 +414,10 @@ client.on('messageCreate', async (message) => {
         console.log("Could not update board message visually:", err);
       }
 
-      // Send the unlocked door result in channel
-      await message.channel.send({ embeds: result.embeds });
+      await message.channel.send({ embeds: result.embeds, files: result.files });
       return;
     }
 
-    // C) 15-MESSAGE AUTO-BUMP LOGIC
     session.count++;
     if (session.count >= 15) {
       session.count = 0;
@@ -419,7 +431,8 @@ client.on('messageCreate', async (message) => {
 
       const newMsg = await message.channel.send({
         embeds: [session.embed],
-        components: session.components
+        components: session.components,
+        files: session.files
       });
 
       session.messageId = newMsg.id;
@@ -428,11 +441,10 @@ client.on('messageCreate', async (message) => {
 });
 
 // -------------------------------------------------------------
-// 6. INTERACTION LISTENER (SLASH COMMANDS & BUTTONS)
+// 6. INTERACTION LISTENER
 // -------------------------------------------------------------
 client.on('interactionCreate', async (interaction) => {
 
-  // A) SLASH COMMAND HANDLING (/domain or /doors)
   if (interaction.isChatInputCommand()) {
     if (interaction.commandName === 'domain' || interaction.commandName === 'doors') {
       if (!isAuthorized(interaction.member, interaction.user)) {
@@ -446,6 +458,7 @@ client.on('interactionCreate', async (interaction) => {
       const replyMessage = await interaction.reply({
         embeds: [payload.embed],
         components: payload.components,
+        files: payload.files,
         fetchReply: true
       });
 
@@ -454,13 +467,13 @@ client.on('interactionCreate', async (interaction) => {
         doors: payload.doors,
         components: payload.components,
         embed: payload.embed,
+        files: payload.files,
         count: 0
       });
     }
     return;
   }
 
-// B) BUTTON CLICK HANDLING (DOORS)
   if (interaction.isButton()) {
     if (!isAuthorized(interaction.member, interaction.user)) {
       return interaction.reply({ 
@@ -469,16 +482,21 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    // ⚡ DEFER REPLY: Tells Discord the bot is working (prevents 3-second timeout)
-    await interaction.deferReply();
+    await interaction.deferUpdate().catch(() => {});
 
-    const session = activeChannels.get(interaction.channelId);
+    let session = activeChannels.get(interaction.channelId);
 
     if (!session) {
-      return interaction.followUp({ 
-        content: "🎭 This hallway has faded into ancient history. Summon a new one with `/domain`!", 
-        ephemeral: true 
-      });
+      const payload = createHallwayPayload();
+      session = {
+        messageId: interaction.message.id,
+        doors: payload.doors,
+        components: payload.components,
+        embed: payload.embed,
+        files: payload.files,
+        count: 0
+      };
+      activeChannels.set(interaction.channelId, session);
     }
 
     const doorIndex = parseInt(interaction.customId.split('_')[1]);
@@ -491,15 +509,13 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    // Update current board message components
     try {
       await interaction.message.edit({ components: session.components });
     } catch (e) {
-      console.log("Could not update board visually:", e);
+      console.log("Could not edit button state:", e);
     }
 
-    // Send the reveal result
-    await interaction.followUp({ embeds: result.embeds });
+    await interaction.channel.send({ embeds: result.embeds, files: result.files });
   }
 });
 
