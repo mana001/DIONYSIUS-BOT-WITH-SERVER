@@ -25,25 +25,26 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers // 👈 ADD THIS INTENT
+    GatewayIntentBits.GuildMembers
   ]
 });
+
+const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 
 // -------------------------------------------------------------
 // 👑 PERMISSIONS CONFIGURATION
 // -------------------------------------------------------------
-// Paste your exact Discord User ID inside the quotes below:
+// NOTE: Right-click your profile in Discord -> "Copy User ID" to get your numeric ID!
 const OWNER_ID = "0ladybunny"; 
 
 const REQUIRED_ROLE_NAME = "HOST B";
 
 // Helper function to check permissions
 function isAuthorized(member, user) {
-  // 1. You (the owner) ALWAYS have access, no matter what roles you have!
+  // 1. You (the owner) ALWAYS have access!
   if (user && user.id === OWNER_ID) return true;
 
   // 2. Anyone with the "HOST B" role also gets access
-  // (If you want ONLY YOU and nobody else, delete or comment out the lines below)
   if (member && member.roles) {
     return member.roles.cache.some(role => role.name === REQUIRED_ROLE_NAME);
   }
@@ -58,7 +59,7 @@ const ASSETS = {
   HALLWAY_IMAGE: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000",
   DEFAULT_GAME_IMAGE: "https://media.giphy.com/media/l2JIdnF6aJzAqzByo/giphy.gif",
   
-  // 📸 TRICK IMAGES (Set to null if you ONLY want a GIF)
+  // 📸 TRICK IMAGES
   TRICK_IMAGES: [
     "https://i.ibb.co/RTBVdydK/ae5947fd-c8a1-4ad2-bb8a-5fbefab03011.png",  // Trick 1 Pic
     "https://i.ibb.co/yHXnyT3/03157239-c73c-4a06-a7ed-9600bfdedada.png",   // Trick 2 Pic
@@ -69,7 +70,7 @@ const ASSETS = {
     null                                                                   // Trick 7 Pic
   ],
 
-    // 🎬 TRICK SPECIFIC GIFS (Cleaned up direct links)
+  // 🎬 TRICK SPECIFIC GIFS
   TRICK_GIFS: [
     "https://media.giphy.com/media/0SVAVxeJsnJ1WRMIPX/giphy.gif", // Trick 1 GIF
     "https://media.giphy.com/media/hTwNnrHNl4rlK/giphy.gif",       // Trick 2 GIF
@@ -80,7 +81,7 @@ const ASSETS = {
     "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"        // Trick 7 GIF
   ],
 
-  // 🎭 SPECIFIC TRICK NICKNAMES (Mapped 1-to-1 with the 7 Tricks above!)
+  // 🎭 SPECIFIC TRICK NICKNAMES
   TRICK_NICKNAMES: [
     "FOSTER FAIL 🥀",
     "ROBERT CARTER FELONI",
@@ -160,8 +161,7 @@ function createHallwayPayload() {
     { type: 'TRICK', image: ASSETS.TRICK_IMAGES[6], gif: ASSETS.TRICK_GIFS[6], nickname: ASSETS.TRICK_NICKNAMES[6], used: false }
   ];
 
-// ✅ ADD THIS NEW LINE:
-shuffle(doors);
+  shuffle(doors);
 
   const hallwayEmbed = new EmbedBuilder()
     .setTitle("🍷 Domain of Dionysius 🎭")
@@ -265,7 +265,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
 
     // 3. Pick a member with the Birthday Boy role
     if (birthdayRole && birthdayRole.members.size > 0) {
-      targetMember = birthdayRole.members.random(); // Picks the Birthday Boy!
+      targetMember = birthdayRole.members.random();
     }
 
     // 4. Change the Birthday Boy's nickname
@@ -281,8 +281,6 @@ async function processDoorUnlock(session, doorIndex, member, user) {
         console.log("Failed to change nickname:", err);
       }
     }
-
-    const embeds = [];
 
     const trickEmbed = new EmbedBuilder()
       .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
@@ -338,9 +336,10 @@ client.on('messageCreate', async (message) => {
   const content = message.content.toLowerCase().trim();
 
   // A) SUMMON COMMANDS (!domain or !doors)
-  if (!isAuthorized(message.member, message.author)) {
-  return message.reply(`⛔ You do not have permission to control Dionysius!`);
-}
+  if (content === '!domain' || content === '!doors') {
+    if (!isAuthorized(message.member, message.author)) {
+      return message.reply(`⛔ You do not have permission to control Dionysius!`);
+    }
 
     const payload = createHallwayPayload();
     const sentMessage = await message.channel.send({
@@ -366,8 +365,8 @@ client.on('messageCreate', async (message) => {
     const doorMatch = content.match(/^(?:door\s*)?([1-9]|1[0-2])$/i);
 
     if (doorMatch) {
-      if (!hasHostRole(message.member)) {
-        return message.reply(`⛔ Only hosts with the **${REQUIRED_ROLE_NAME}** role can open doors!`);
+      if (!isAuthorized(message.member, message.author)) {
+        return message.reply(`⛔ Only authorized hosts can open doors!`);
       }
 
       const doorNum = parseInt(doorMatch[1]);
@@ -422,13 +421,12 @@ client.on('interactionCreate', async (interaction) => {
   // A) SLASH COMMAND HANDLING (/domain or /doors)
   if (interaction.isChatInputCommand()) {
     if (interaction.commandName === 'domain' || interaction.commandName === 'doors') {
-      
       if (!isAuthorized(interaction.member, interaction.user)) {
-  return interaction.reply({ 
-    content: `⛔ You do not have permission to control Dionysius!`, 
-    ephemeral: true 
-  });
-}
+        return interaction.reply({ 
+          content: `⛔ You do not have permission to control Dionysius!`, 
+          ephemeral: true 
+        });
+      }
 
       const payload = createHallwayPayload();
       const replyMessage = await interaction.reply({
@@ -450,9 +448,9 @@ client.on('interactionCreate', async (interaction) => {
 
   // B) BUTTON CLICK HANDLING (DOORS)
   if (interaction.isButton()) {
-    if (!hasHostRole(interaction.member)) {
+    if (!isAuthorized(interaction.member, interaction.user)) {
       return interaction.reply({ 
-        content: `⛔ Only hosts with the **${REQUIRED_ROLE_NAME}** role can unseal doors!`, 
+        content: `⛔ Only authorized hosts can unseal doors!`, 
         ephemeral: true 
       });
     }
