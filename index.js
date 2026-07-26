@@ -70,7 +70,7 @@ const ASSETS = {
     { 
       nickname: "FOSTER FAIL 🥀", 
       image: path.join(__dirname, 'assets', 'img1.png'), 
-      gif: path.join(__dirname, 'assets', 'gif5.png') 
+      gif: path.join(__dirname, 'assets', 'gif5.gig') 
     },
     { 
       nickname: "ROBERT CARTER FELONI", 
