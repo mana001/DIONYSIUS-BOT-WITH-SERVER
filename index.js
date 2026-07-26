@@ -218,7 +218,7 @@ function createHallwayPayload() {
 }
 
 // -------------------------------------------------------------
-// CORE DOOR UNLOCK LOGIC
+// CORE DOOR UNLOCK LOGIC (Crash-Proof: Only locks when successful)
 // -------------------------------------------------------------
 async function processDoorUnlock(session, doorIndex, member, user) {
   const selectedDoor = session.doors[doorIndex];
@@ -226,20 +226,6 @@ async function processDoorUnlock(session, doorIndex, member, user) {
   if (selectedDoor.used) {
     return { success: false, reason: "ALREADY_OPEN" };
   }
-
-  selectedDoor.used = true;
-
-  session.components = session.components.map(row => {
-    const newRow = ActionRowBuilder.from(row);
-    newRow.components.forEach(button => {
-      if (button.data.custom_id === `door_${doorIndex}`) {
-        button.setDisabled(true);
-        button.setLabel(`Opened (${doorIndex + 1})`);
-        button.setStyle(selectedDoor.type === 'TRICK' ? ButtonStyle.Danger : ButtonStyle.Success);
-      }
-    });
-    return newRow;
-  });
 
   const embeds = [];
   const files = [];
@@ -346,6 +332,22 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       embeds.push(trickEmbed);
     }
   }
+
+  // Only mark as used after everything has successfully generated
+  selectedDoor.used = true;
+
+  session.components = session.components.map(row => {
+    const newRow = ActionRowBuilder.from(row);
+    newRow.components.forEach(button => {
+      if (button.data.custom_id === `door_${doorIndex}`) {
+        button.setDisabled(true);
+        button.setLabel(`Opened (${doorIndex + 1})`);
+        button.setStyle(selectedDoor.type === 'TRICK' ? ButtonStyle.Danger : ButtonStyle.Success);
+      }
+    });
+    return newRow;
+  });
+
   return { success: true, embeds, files };
 }
 
@@ -446,25 +448,9 @@ client.on('interactionCreate', async (interaction) => {
 
     } catch (err) {
       console.error(`❌ Error opening Door #${doorIndex + 1}:`, err);
-      
-      selectedDoor.used = false;
-
-      session.components = session.components.map(row => {
-        const newRow = ActionRowBuilder.from(row);
-        newRow.components.forEach(button => {
-          if (button.data.custom_id === `door_${doorIndex}`) {
-            button.setDisabled(false);
-            button.setLabel(`Door ${doorIndex + 1}`);
-            button.setStyle(ButtonStyle.Primary);
-          }
-        });
-        return newRow;
-      });
-
-      await interaction.message.edit({ components: session.components }).catch(() => {});
 
       return interaction.followUp({ 
-        content: `⚠️ Render lagged while opening Door #${doorIndex + 1}. The door has been unlocked—please try clicking it again!`, 
+        content: `⚠️ Render lagged while opening Door #${doorIndex + 1}. The door remains unlocked—please try clicking it again!`, 
         ephemeral: true 
       });
     }
