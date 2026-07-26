@@ -82,19 +82,14 @@ const ASSETS = {
     { 
       nickname: "ROBERT CARTER FELONI", 
       image: path.join(__dirname, 'assets', 'img2.png'), 
-      gif: path.join(__dirname, 'assets', 'gif6.gif') 
+      gif: path.join(__dirname, 'assets', 'gif1.gif') 
     },
     { 
       nickname: "Goblin Snack 🥒", 
       image: path.join(__dirname, 'assets', 'img3.png'), 
       gif: path.join(__dirname, 'assets', 'gif7.gif') 
     },
-    { 
-      nickname: "MR.POOTY 😬", 
-      image: null, 
-      gif: path.join(__dirname, 'assets', 'gif1.gif') 
-    },
-    { 
+    
       nickname: "THE REAL RAG DOLL 🪆", 
       image: null, 
       gif: path.join(__dirname, 'assets', 'gif2.gif') 
