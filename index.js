@@ -21,7 +21,7 @@ setInterval(() => {
       console.log(`⚠️ Keep-alive ping failed: ${err.message}`);
     });
   }
-}, 14 * 60 * 1000); // Ping every 14 minutes
+// To this: }, 5 * 60 * 1000); // New (Every 5 minutes)
 
 // -------------------------------------------------------------
 // 2. DISCORD CLIENT SETUP & INTENTS
