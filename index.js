@@ -62,13 +62,18 @@ function isAuthorized(member, user) {
 }
 
 // -------------------------------------------------------------
-// 3. LOCAL ASSETS & GAME DATA MAPPING
+// 3. LOCAL ASSETS & GAME DATA MAPPING (5 Games & 7 Tricks = 12 Doors)
 // -------------------------------------------------------------
 const ASSETS = {
   HALLWAY_IMAGE: path.join(__dirname, 'assets', 'hallway.png'),
   
-  // 💀 TRICKS MAPPED TO LOCAL FILES & EXACT NICKNAMES (6 Tricks)
+  // 💀 TRICKS MAPPED TO LOCAL FILES & EXACT NICKNAMES (7 Tricks)
   TRICKS: [
+    { 
+      nickname: "GRANPA CHASER 👴", 
+      image: null, 
+      gif: path.join(__dirname, 'assets', 'gif4.webp') 
+    },
     { 
       nickname: "FOSTER FAIL 🥀", 
       image: path.join(__dirname, 'assets', 'img1.png'), 
@@ -111,7 +116,7 @@ const TRICK_QUOTES = [
 ];
 
 // -------------------------------------------------------------
-// 📋 GAMES LIST (6 Games with Custom GIFs)
+// 📋 GAMES LIST (5 Games with Custom GIFs)
 // -------------------------------------------------------------
 const GAMES_LIST = [
   { 
@@ -143,12 +148,6 @@ const GAMES_LIST = [
     description: "The host will show you a random out-of-context quote from the server history. Guess who said it!",
     image: null,
     gif: path.join(__dirname, 'assets', 'gif12.gif')
-  },
-  { 
-    name: "WOULD YOU RATHER? 🤔", 
-    description: "Choose between two difficult or hilarious dilemmas and defend your choice!",
-    image: null,
-    gif: path.join(__dirname, 'assets', 'gif13.gif')
   }
 ];
 
@@ -164,20 +163,20 @@ function shuffle(array) {
 
 function createHallwayPayload() {
   const doors = [
-    // 6 Games
+    // 5 Games
     { type: 'GAME', data: GAMES_LIST[0], used: false },
     { type: 'GAME', data: GAMES_LIST[1], used: false },
     { type: 'GAME', data: GAMES_LIST[2], used: false },
     { type: 'GAME', data: GAMES_LIST[3], used: false },
     { type: 'GAME', data: GAMES_LIST[4], used: false },
-    { type: 'GAME', data: GAMES_LIST[5], used: false },
-    // 6 Tricks
+    // 7 Tricks
     { type: 'TRICK', data: ASSETS.TRICKS[0], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[1], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[2], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[3], used: false },
     { type: 'TRICK', data: ASSETS.TRICKS[4], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[5], used: false }
+    { type: 'TRICK', data: ASSETS.TRICKS[5], used: false },
+    { type: 'TRICK', data: ASSETS.TRICKS[6], used: false }
   ];
 
   shuffle(doors);
@@ -187,8 +186,8 @@ function createHallwayPayload() {
     .setTitle("🍷 Domain of Dionysius 🎭")
     .setDescription(
       "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
-      "✨ **6 Doors** lead to grand party games...\n" +
-      "💀 **6 Doors** lead to chaotic tricks & madness.\n\n" +
+      "✨ **5 Doors** lead to grand party games...\n" +
+      "💀 **7 Doors** lead to chaotic tricks & madness.\n\n" +
       "*Choose your door wisely, mortal...*"
     )
     .setColor("#800020")
