@@ -39,7 +39,9 @@ const {
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
   ]
 });
 
@@ -70,7 +72,7 @@ const ASSETS = {
     { 
       nickname: "FOSTER FAIL 🥀", 
       image: path.join(__dirname, 'assets', 'img1.png'), 
-      gif: path.join(__dirname, 'assets', 'gif5.gig') 
+      gif: path.join(__dirname, 'assets', 'gif5.gif') 
     },
     { 
       nickname: "ROBERT CARTER FELONI", 
@@ -116,7 +118,7 @@ const GAMES_LIST = [
     name: "EMOJI STORY 🎭", 
     description: "Tell a short story using **ONLY EMOJIS**. Vagg has to guess what happened!",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif8.gif')
+    gif: path.join(__dirname, 'assets', 'gif8.webp')
   },
   { 
     name: "HOW WELL DO YOU KNOW YOUR CLICK? 👥", 
@@ -128,7 +130,7 @@ const GAMES_LIST = [
     name: "FACT OR FICTION? 📜", 
     description: "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif10.webp)
+    gif: path.join(__dirname, 'assets', 'gif10.webp')
   },
   { 
     name: "HOT SEAT 🔥", 
@@ -327,7 +329,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       const gifName = path.basename(trickData.gif);
       trickEmbed.setImage(`attachment://${gifName}`);
       files.push(new AttachmentBuilder(trickData.gif));
-      embeds.push(trickEmbed);
+      embeds.push(gifEmbed);
     } else {
       embeds.push(trickEmbed);
     }
@@ -370,7 +372,56 @@ client.once('ready', async () => {
 });
 
 // -------------------------------------------------------------
-// 5. INTERACTION LISTENER (Slash Commands & Buttons ONLY)
+// 5. CHAT INPUT LISTENER (Type Door Number 1-12 to Open)
+// -------------------------------------------------------------
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
+  const trimmed = message.content.trim();
+  const doorNum = parseInt(trimmed);
+  
+  if (isNaN(doorNum) || doorNum < 1 || doorNum > 12) return;
+
+  if (!isAuthorized(message.member, message.author)) {
+    return message.reply({ content: `⛔ Only authorized hosts can unseal doors!` }).catch(() => {});
+  }
+
+  let session = activeChannels.get(message.channelId);
+  if (!session) {
+    return message.reply({ content: `⚠️ No active hallway in this channel! Summon it first using /domain or /doors.` }).catch(() => {});
+  }
+
+  const doorIndex = doorNum - 1;
+  const selectedDoor = session.doors[doorIndex];
+
+  if (selectedDoor.used) {
+    return message.reply({ content: `🚪 Door #${doorNum} has already been unsealed! Choose another.` }).catch(() => {});
+  }
+
+  try {
+    const result = await processDoorUnlock(session, doorIndex, message.member, message.author);
+
+    if (!result.success) {
+      return message.reply({ content: `⚠️ Could not open this door.` }).catch(() => {});
+    }
+
+    try {
+      const hallwayMsg = await message.channel.messages.fetch(session.messageId);
+      await hallwayMsg.edit({ components: session.components });
+    } catch (e) {
+      console.log("Could not update hallway message buttons via chat:", e);
+    }
+
+    await message.channel.send({ embeds: result.embeds, files: result.files });
+
+  } catch (err) {
+    console.error(`❌ Error opening Door #${doorNum} via chat:`, err);
+    return message.reply({ content: `⚠️ Render failed while opening Door #${doorNum}. Please try again!` }).catch(() => {});
+  }
+});
+
+// -------------------------------------------------------------
+// 6. INTERACTION LISTENER (Slash Commands & Buttons)
 // -------------------------------------------------------------
 client.on('interactionCreate', async (interaction) => {
 
