@@ -50,7 +50,8 @@ const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 // -------------------------------------------------------------
 // 👑 PERMISSIONS CONFIGURATION
 // -------------------------------------------------------------
-const OWNER_ID = "YOUR_NUMERIC_DISCORD_USER_ID"; 
+const OWNER_ID = "YOUR_NUMERIC_DISCORD_USER_ID";
+const BIRTHDAY_BOY_ID = "1082430344936042606";
 const REQUIRED_ROLE_NAME = "HOST B";
 
 function isAuthorized(member, user) {
@@ -271,34 +272,22 @@ async function processDoorUnlock(session, doorIndex, member, user) {
     let nickChanged = false;
 
     try {
-      await guild.roles.fetch();
-      const birthdayRole = guild.roles.cache.find(
-        r => r.name.toLowerCase() === "birthday boy"
-      );
-
-      if (birthdayRole) {
-        await birthdayRole.members.fetch();
-        if (birthdayRole.members.size > 0) {
-          targetMember = birthdayRole.members.random();
-        }
-      }
+      // Directly fetch the user by their ID
+      targetMember = await guild.members.fetch(BIRTHDAY_BOY_ID).catch(() => null);
     } catch (e) {
-      console.log("Could not fetch role or members:", e);
+      console.log("Could not fetch user by ID:", e);
     }
 
     if (targetMember) {
       try {
-        console.log(`🔍 Target found: ${targetMember.user.tag} | Manageable: ${targetMember.manageable}`);
-        
         if (targetMember.manageable) {
           await targetMember.setNickname(targetNickname);
           nickChanged = true;
-          console.log(`✅ Successfully changed nickname to: ${targetNickname}`);
         } else {
-          console.log(`❌ FAILED TO CHANGE NICKNAME: targetMember.manageable is FALSE. Make sure the bot's role is HIGHER than the user's role and has 'Manage Nicknames' permission, and that the user is not the Server Owner.`);
+          console.log("❌ Target member is not manageable (Bot's role must be higher than theirs, and they cannot be the server owner).");
         }
       } catch (err) {
-        console.log("❌ Exception during setNickname:", err);
+        console.log("Failed to change nickname:", err);
       }
     }
 
@@ -309,35 +298,23 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       .setDescription(
         `A dark door was opened and Dionysius targeted the Birthday Boy!\n\n` +
         `💬 *"${randomQuote}"*\n\n` +
-        `🎂 **Victim:** ${targetMember ? targetMember : "No Birthday Boy found!"}\n` +
+        `🎂 **Victim:** ${targetMember ? targetMember : "Birthday Boy ID not found!"}\n` +
         (nickChanged 
           ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}**!` 
           : `🎭 **Fate:** Dionysius laughs at your foolishness!`)
       )
       .setColor("#FF0000");
 
-    if (trickData.image) {
-      const imgName = path.basename(trickData.image);
-      trickEmbed.setImage(`attachment://${imgName}`);
-      files.push(new AttachmentBuilder(trickData.image));
-      embeds.push(trickEmbed);
-
-      if (trickData.gif) {
-        const gifName = path.basename(trickData.gif);
-        const gifEmbed = new EmbedBuilder()
-          .setColor("#FF0000")
-          .setImage(`attachment://${gifName}`);
-        files.push(new AttachmentBuilder(trickData.gif));
-        embeds.push(gifEmbed);
-      }
-    } else if (trickData.gif) {
+    if (trickData.gif) {
       const gifName = path.basename(trickData.gif);
-      trickEmbed.setImage(`attachment://${gifName}`);
+      const gifEmbed = new EmbedBuilder()
+        .setColor("#FF0000")
+        .setImage(`attachment://${gifName}`);
       files.push(new AttachmentBuilder(trickData.gif));
-      embeds.push(trickEmbed);
-    } else {
-      embeds.push(trickEmbed);
+      embeds.push(gifEmbed);
     }
+    
+    embeds.unshift(trickEmbed); // Ensures text embed comes first
   }
 
   // Only mark as used after everything has successfully generated
