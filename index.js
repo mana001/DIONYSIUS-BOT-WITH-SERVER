@@ -39,8 +39,6 @@ const {
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers
   ]
 });
@@ -101,6 +99,14 @@ const ASSETS = {
     }
   ]
 };
+
+// 💬 TRICK RANDOM QUOTES POOL
+const TRICK_QUOTES = [
+  "Ah, exactly what I always wanted: absolute disappointment.",
+  "Let me guess, the real prize is the friends we lost along the way?",
+  "Oh, brilliant. Should I frame this or just cry now?",
+  "Womp womp. Better luck next time, Champion!"
+];
 
 // -------------------------------------------------------------
 // 📋 GAMES LIST (6 Games with Custom GIFs)
@@ -180,12 +186,12 @@ function createHallwayPayload() {
     .setDescription(
       "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
       "✨ **6 Doors** lead to grand party games...\n" +
-      "💀 **7 Doors** lead to chaotic tricks & madness.\n\n" +
+      "💀 **6 Doors** lead to chaotic tricks & madness.\n\n" +
       "*Choose your door wisely, mortal...*"
     )
     .setColor("#800020")
     .setImage(`attachment://${path.basename(ASSETS.HALLWAY_IMAGE)}`)
-    .setFooter({ text: "Dionysius is watching • Auto-following chat" });
+    .setFooter({ text: "Dionysius is watching" });
 
   const row1 = new ActionRowBuilder();
   const row2 = new ActionRowBuilder();
@@ -303,10 +309,14 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       }
     }
 
+    // Pick a random sarcastic trick quote
+    const randomQuote = TRICK_QUOTES[Math.floor(Math.random() * TRICK_QUOTES.length)];
+
     const trickEmbed = new EmbedBuilder()
       .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
       .setDescription(
         `A dark door was opened and Dionysius targeted the Birthday Boy!\n\n` +
+        `💬 *"${randomQuote}"*\n\n` +
         `🎂 **Victim:** ${targetMember ? targetMember : "No Birthday Boy found!"}\n` +
         (nickChanged 
           ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}**!` 
@@ -359,89 +369,7 @@ client.once('ready', async () => {
 });
 
 // -------------------------------------------------------------
-// 5. MESSAGE LISTENER
-// -------------------------------------------------------------
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-
-  const content = message.content.toLowerCase().trim();
-
-  if (content === '!domain' || content === '!doors') {
-    if (!isAuthorized(message.member, message.author)) {
-      return message.reply(`⛔ You do not have permission to control Dionysius!`);
-    }
-
-    const payload = createHallwayPayload();
-    const sentMessage = await message.channel.send({
-      embeds: [payload.embed],
-      components: payload.components,
-      files: payload.files
-    });
-
-    activeChannels.set(message.channel.id, {
-      messageId: sentMessage.id,
-      doors: payload.doors,
-      components: payload.components,
-      embed: payload.embed,
-      files: payload.files,
-      count: 0
-    });
-    return;
-  }
-
-  if (activeChannels.has(message.channel.id)) {
-    const session = activeChannels.get(message.channel.id);
-    const doorMatch = content.match(/^(?:door\s*)?([1-9]|1[0-2])$/i);
-
-    if (doorMatch) {
-      if (!isAuthorized(message.member, message.author)) {
-        return message.reply(`⛔ Only authorized hosts can open doors!`);
-      }
-
-      const doorNum = parseInt(doorMatch[1]);
-      const doorIndex = doorNum - 1;
-
-      const result = await processDoorUnlock(session, doorIndex, message.member, message.author);
-
-      if (!result.success && result.reason === "ALREADY_OPEN") {
-        return message.reply(`🚪 Door #${doorNum} has already been opened! Pick another.`);
-      }
-
-      try {
-        const boardMsg = await message.channel.messages.fetch(session.messageId);
-        if (boardMsg) await boardMsg.edit({ components: session.components });
-      } catch (err) {
-        console.log("Could not update board message visually:", err);
-      }
-
-      await message.channel.send({ embeds: result.embeds, files: result.files });
-      return;
-    }
-
-    session.count++;
-    if (session.count >= 15) {
-      session.count = 0;
-
-      try {
-        const oldMsg = await message.channel.messages.fetch(session.messageId);
-        if (oldMsg) await oldMsg.delete();
-      } catch (err) {
-        console.log("Old hallway message already deleted or not found.");
-      }
-
-      const newMsg = await message.channel.send({
-        embeds: [session.embed],
-        components: session.components,
-        files: session.files
-      });
-
-      session.messageId = newMsg.id;
-    }
-  }
-});
-
-// -------------------------------------------------------------
-// 6. INTERACTION LISTENER
+// 5. INTERACTION LISTENER (Slash Commands & Buttons ONLY)
 // -------------------------------------------------------------
 client.on('interactionCreate', async (interaction) => {
 
@@ -467,8 +395,7 @@ client.on('interactionCreate', async (interaction) => {
         doors: payload.doors,
         components: payload.components,
         embed: payload.embed,
-        files: payload.files,
-        count: 0
+        files: payload.files
       });
     }
     return;
@@ -493,8 +420,7 @@ client.on('interactionCreate', async (interaction) => {
         doors: payload.doors,
         components: payload.components,
         embed: payload.embed,
-        files: payload.files,
-        count: 0
+        files: payload.files
       };
       activeChannels.set(interaction.channelId, session);
     }
