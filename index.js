@@ -1,13 +1,28 @@
 // -------------------------------------------------------------
-// 1. KEEP-ALIVE SERVER FOR RENDER
+// 1. KEEP-ALIVE SERVER FOR RENDER (WITH SELF-PINGING)
 // -------------------------------------------------------------
 const express = require('express');
+const https = require('https'); // Built-in HTTP module to send pings
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => res.send('🍷 Dionysius is awake and watching!'));
 app.listen(PORT, '0.0.0.0', () => console.log(`Server listening on port ${PORT}`));
 
+// ⏰ SELF-PING LOGIC
+// Render automatically provides your app's URL in process.env.RENDER_EXTERNAL_URL
+const APP_URL = process.env.RENDER_EXTERNAL_URL || "https://your-render-app-name.onrender.com";
+
+setInterval(() => {
+  // Only ping if a real URL is present (won't throw errors locally)
+  if (APP_URL && !APP_URL.includes("your-render-app-name")) {
+    https.get(APP_URL, (res) => {
+      console.log(`⏰ Keep-alive ping sent to ${APP_URL} (Status: ${res.statusCode})`);
+    }).on('error', (err) => {
+      console.log(`⚠️ Keep-alive ping failed: ${err.message}`);
+    });
+  }
+}, 14 * 60 * 1000); // Sends a request every 14 minutes (Render sleeps at 15 mins)
 // -------------------------------------------------------------
 // 2. DISCORD CLIENT SETUP & INTENTS
 // -------------------------------------------------------------
@@ -25,26 +40,25 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers // 👈 ADD THIS INTENT
   ]
 });
-
-const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 
 // -------------------------------------------------------------
 // 👑 PERMISSIONS CONFIGURATION
 // -------------------------------------------------------------
-// NOTE: Right-click your profile in Discord -> "Copy User ID" to get your numeric ID!
-const OWNER_ID = "726748866023784490"; 
+// Paste your exact Discord User ID inside the quotes below:
+const OWNER_ID = "0ladybunny"; 
 
 const REQUIRED_ROLE_NAME = "HOST B";
 
 // Helper function to check permissions
 function isAuthorized(member, user) {
-  // 1. You (the owner) ALWAYS have access!
+  // 1. You (the owner) ALWAYS have access, no matter what roles you have!
   if (user && user.id === OWNER_ID) return true;
 
   // 2. Anyone with the "HOST B" role also gets access
+  // (If you want ONLY YOU and nobody else, delete or comment out the lines below)
   if (member && member.roles) {
     return member.roles.cache.some(role => role.name === REQUIRED_ROLE_NAME);
   }
@@ -59,7 +73,7 @@ const ASSETS = {
   HALLWAY_IMAGE: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000",
   DEFAULT_GAME_IMAGE: "https://media.giphy.com/media/l2JIdnF6aJzAqzByo/giphy.gif",
   
-  // 📸 TRICK IMAGES
+  // 📸 TRICK IMAGES (Set to null if you ONLY want a GIF)
   TRICK_IMAGES: [
     "https://i.ibb.co/RTBVdydK/ae5947fd-c8a1-4ad2-bb8a-5fbefab03011.png",  // Trick 1 Pic
     "https://i.ibb.co/yHXnyT3/03157239-c73c-4a06-a7ed-9600bfdedada.png",   // Trick 2 Pic
@@ -70,7 +84,7 @@ const ASSETS = {
     null                                                                   // Trick 7 Pic
   ],
 
-  // 🎬 TRICK SPECIFIC GIFS
+    // 🎬 TRICK SPECIFIC GIFS (Cleaned up direct links)
   TRICK_GIFS: [
     "https://media.giphy.com/media/0SVAVxeJsnJ1WRMIPX/giphy.gif", // Trick 1 GIF
     "https://media.giphy.com/media/hTwNnrHNl4rlK/giphy.gif",       // Trick 2 GIF
@@ -81,7 +95,7 @@ const ASSETS = {
     "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"        // Trick 7 GIF
   ],
 
-  // 🎭 SPECIFIC TRICK NICKNAMES
+  // 🎭 SPECIFIC TRICK NICKNAMES (Mapped 1-to-1 with the 7 Tricks above!)
   TRICK_NICKNAMES: [
     "FOSTER FAIL 🥀",
     "ROBERT CARTER FELONI",
@@ -161,7 +175,8 @@ function createHallwayPayload() {
     { type: 'TRICK', image: ASSETS.TRICK_IMAGES[6], gif: ASSETS.TRICK_GIFS[6], nickname: ASSETS.TRICK_NICKNAMES[6], used: false }
   ];
 
-  shuffle(doors);
+// ✅ ADD THIS NEW LINE:
+shuffle(doors);
 
   const hallwayEmbed = new EmbedBuilder()
     .setTitle("🍷 Domain of Dionysius 🎭")
@@ -265,7 +280,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
 
     // 3. Pick a member with the Birthday Boy role
     if (birthdayRole && birthdayRole.members.size > 0) {
-      targetMember = birthdayRole.members.random();
+      targetMember = birthdayRole.members.random(); // Picks the Birthday Boy!
     }
 
     // 4. Change the Birthday Boy's nickname
@@ -281,6 +296,8 @@ async function processDoorUnlock(session, doorIndex, member, user) {
         console.log("Failed to change nickname:", err);
       }
     }
+
+    const embeds = [];
 
     const trickEmbed = new EmbedBuilder()
       .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
@@ -336,10 +353,9 @@ client.on('messageCreate', async (message) => {
   const content = message.content.toLowerCase().trim();
 
   // A) SUMMON COMMANDS (!domain or !doors)
-  if (content === '!domain' || content === '!doors') {
-    if (!isAuthorized(message.member, message.author)) {
-      return message.reply(`⛔ You do not have permission to control Dionysius!`);
-    }
+  if (!isAuthorized(message.member, message.author)) {
+  return message.reply(`⛔ You do not have permission to control Dionysius!`);
+}
 
     const payload = createHallwayPayload();
     const sentMessage = await message.channel.send({
@@ -365,8 +381,8 @@ client.on('messageCreate', async (message) => {
     const doorMatch = content.match(/^(?:door\s*)?([1-9]|1[0-2])$/i);
 
     if (doorMatch) {
-      if (!isAuthorized(message.member, message.author)) {
-        return message.reply(`⛔ Only authorized hosts can open doors!`);
+      if (!hasHostRole(message.member)) {
+        return message.reply(`⛔ Only hosts with the **${REQUIRED_ROLE_NAME}** role can open doors!`);
       }
 
       const doorNum = parseInt(doorMatch[1]);
@@ -421,12 +437,13 @@ client.on('interactionCreate', async (interaction) => {
   // A) SLASH COMMAND HANDLING (/domain or /doors)
   if (interaction.isChatInputCommand()) {
     if (interaction.commandName === 'domain' || interaction.commandName === 'doors') {
+      
       if (!isAuthorized(interaction.member, interaction.user)) {
-        return interaction.reply({ 
-          content: `⛔ You do not have permission to control Dionysius!`, 
-          ephemeral: true 
-        });
-      }
+  return interaction.reply({ 
+    content: `⛔ You do not have permission to control Dionysius!`, 
+    ephemeral: true 
+  });
+}
 
       const payload = createHallwayPayload();
       const replyMessage = await interaction.reply({
@@ -448,9 +465,9 @@ client.on('interactionCreate', async (interaction) => {
 
   // B) BUTTON CLICK HANDLING (DOORS)
   if (interaction.isButton()) {
-    if (!isAuthorized(interaction.member, interaction.user)) {
+    if (!hasHostRole(interaction.member)) {
       return interaction.reply({ 
-        content: `⛔ Only authorized hosts can unseal doors!`, 
+        content: `⛔ Only hosts with the **${REQUIRED_ROLE_NAME}** role can unseal doors!`, 
         ephemeral: true 
       });
     }
