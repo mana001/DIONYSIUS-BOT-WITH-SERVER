@@ -308,6 +308,13 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       )
       .setColor("#FF0000");
 
+    // 🛠️ FIXED: Now checks and attaches trickData.image (so img1, img2, img3 show up correctly where you placed them)
+    if (trickData.image) {
+      const imgName = path.basename(trickData.image);
+      trickEmbed.setImage(`attachment://${imgName}`);
+      files.push(new AttachmentBuilder(trickData.image));
+    }
+
     if (trickData.gif) {
       const gifName = path.basename(trickData.gif);
       const gifEmbed = new EmbedBuilder()
