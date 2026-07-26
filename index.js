@@ -30,65 +30,135 @@ const client = new Client({
 
 const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 
+// 👑 ROLE REQUIRED TO CONTROL THE BOT
+const REQUIRED_ROLE_NAME = "HOST B";
+
+// Helper function to check if a member has the required role
+function hasHostRole(member) {
+  if (!member || !member.roles) return false;
+  return member.roles.cache.some(role => role.name === REQUIRED_ROLE_NAME);
+}
+
 // -------------------------------------------------------------
 // 3. ASSETS & GAME DATA
 // -------------------------------------------------------------
 const ASSETS = {
   HALLWAY_IMAGE: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000",
-  GAME_IMAGE: "https://media.giphy.com/media/l2JIdnF6aJzAqzByo/giphy.gif",
-  TRICK_GIFS: [
-    "https://media.giphy.com/media/xl5QdxfNonh3q/giphy.gif",
-    "https://media.giphy.com/media/ba5g4ID9g5cT6/giphy.gif",
-    "https://media.giphy.com/media/13l7rl15fX3s2I/giphy.gif",
-    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif"
+  DEFAULT_GAME_IMAGE: "https://media.giphy.com/media/l2JIdnF6aJzAqzByo/giphy.gif",
+  
+  // 📸 TRICK IMAGES (Set to null if you ONLY want a GIF)
+  TRICK_IMAGES: [
+    "https://i.ibb.co/RTBVdydK/ae5947fd-c8a1-4ad2-bb8a-5fbefab03011.png",  // Trick 1 Pic
+    "https://i.ibb.co/yHXnyT3/03157239-c73c-4a06-a7ed-9600bfdedada.png",   // Trick 2 Pic
+    "https://i.ibb.co/mFFQ3T9V/2cdb2222-7e40-49d9-ada7-6f5cdae57299.png",   // Trick 3 Pic
+    null,                                                                  // Trick 4 Pic
+    null,                                                                  // Trick 5 Pic
+    null,                                                                  // Trick 6 Pic
+    null                                                                   // Trick 7 Pic
   ],
-  SILLY_NICKNAMES: [
-    "Mr. POOTY 💩",
-    "Lord Clown 🤡",
+
+  // 🎬 TRICK SPECIFIC GIFS
+  TRICK_GIFS: [
+    "https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUyNXh1djJtaTE5ZmZvaHpsazlqbDQ0M2djaXR3YmQxeXp1bGp5cmJsZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/0SVAVxeJsnJ1WRMIPX/giphy.gif",
+    "https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUyNmcya3kzNHRwd3NxejZnM3lubng4dTlmbzZzZnJnN2ZwM3puc3Z2cCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hTwNnrHNl4rlK/giphy.gif",
+    "https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUya2xicTg1Y2VuM254NDJkNGdxM2kyMjUzNW8wenFvMmt6cHI0YW9uZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/2g6sCTsSoVuSfSxK4W/giphy.gif",
+    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",
+    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",
+    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",
+    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"
+  ],
+
+  // 🎭 SPECIFIC TRICK NICKNAMES (Mapped 1-to-1 with the 7 Tricks above!)
+  TRICK_NICKNAMES: [
+    "FOSTER FAIL 🥀",
+    "ROBERT CARTER FELONI",
     "Goblin Snack 🥒",
-    "Party Fool 🎭",
-    "Dionysius's Chair 🪑",
-    "Soggy Waffle 🧇"
+    "MR.POOTY 😬",
+    "THE REAL RAG DOLL 🪆",
+    "Sir Shits-A-Lot 🕵",
+    "GRANPA CHASER 👹"
   ]
 };
 
+// -------------------------------------------------------------
+// 📋 GAMES LIST (5 Games with Custom Images & GIFs)
+// -------------------------------------------------------------
 const GAMES_LIST = [
-  { name: "EMOJI STORY 🎭", description: "Tell a short embarrassing story using **ONLY EMOJIS**. The rest of the group has 2 minutes to guess what happened!" },
-  { name: "HOW WELL DO YOU KNOW YOUR CLIQUE? 👥", description: "Pick one person in the room. You have to answer 3 fast trivia questions about them voted on by the rest of the party!" },
-  { name: "FACT OR FICTION? 📜", description: "Tell 2 bizarre facts and 1 convincing lie about yourself. Anyone who guesses wrong must take a silly penalty!" },
-  { name: "HOT SEAT 🔥", description: "You are on the Hot Seat for 3 minutes! Everyone in the voice chat gets to ask you ONE unfiltered question." },
-  { name: "WHO SAID IT? 🗣️", description: "The host will read out a random out-of-context quote from the server history. Guess who said it first!" },
-  { name: "WOULD YOU RATHER? ⚖️", description: "The party host will present two unbearable choices. You must pick one and justify it with full passion!" }
+  { 
+    name: "EMOJI STORY 🎭", 
+    description: "Tell a short story using **ONLY EMOJIS**. Vagg has to guess what happened!",
+    image: null,
+    gif: "https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUyNnoxenJtbTJtMGEwYnplczk3bXA4eGJycGJvcmQyeXh2dmMyN2s4aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/519ChzMeyx4pa/giphy.gif"
+  },
+  { 
+    name: "HOW WELL DO YOU KNOW YOUR CLIQUE? 👥", 
+    description: "You have to answer questions about your click!",
+    image: null,
+    gif: "https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUydTV4eHQ5MGtsMGpjaDU3aGIxbzdtY205eTA4YmRhdWJ4dWZqcWJ0dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hW4iRJRU1rsfXve2Is/giphy.gif"
+  },
+  { 
+    name: "FACT OR FICTION? 📜", 
+    description: "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
+    image: null,
+    gif: "https://media0.giphy.com/media/v1.Y2lkPTZjMDliOTUyZnl4cHA5ZzVzajYzaW5hcmt4ZXVvZmFzenhwNTUxYmlyanZ0eWE3ZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/BQUITFiYVtNte/giphy.gif"
+  },
+  { 
+    name: "HOT SEAT 🔥", 
+    description: "You are on the Hot Seat! ANSWER THE QUESTION WITH THE FIRST PERSON WHO COMES TO MIND! IT'S HOT HOT🌡🛀🔥🌶",
+    image: null,
+    gif: "https://media3.giphy.com/media/v1.Y2lkPTZjMDliOTUyZWJvcnZldG1rY3A5Ym1keWJ3c3BkNGN3bjZ6dW03dGE0cGthbzJyMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SmWymjSauhddFrFIOi/giphy.gif"
+  },
+  { 
+    name: "WHO SAID IT? 🗣️", 
+    description: "The host will show you a random out-of-context quote from the server history. Guess who said it!",
+    image: null,
+    gif: "https://media.giphy.com/media/13l7rl15fX3s2I/giphy.gif"
+  }
 ];
 
-const activeSessions = new Map();
+// Map to track active hallway per channel
+const activeChannels = new Map();
 
-// Helper function to build hallway embed and buttons
+// Helper function to build hallway embed with 12 RANDOMLY MIXED DOORS
 function createHallwayPayload() {
-  const shuffledGames = [...GAMES_LIST].sort(() => 0.5 - Math.random()).slice(0, 5);
-  const doors = [];
-  shuffledGames.forEach(game => doors.push({ type: 'GAME', data: game, used: false }));
-  for (let i = 0; i < 5; i++) {
-    doors.push({ type: 'TRICK', used: false });
-  }
+  const doors = [
+    // 🎲 5 Games
+    { type: 'GAME', data: GAMES_LIST[0], used: false },
+    { type: 'GAME', data: GAMES_LIST[1], used: false },
+    { type: 'GAME', data: GAMES_LIST[2], used: false },
+    { type: 'GAME', data: GAMES_LIST[3], used: false },
+    { type: 'GAME', data: GAMES_LIST[4], used: false },
+
+    // 💀 7 Tricks
+    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[0], gif: ASSETS.TRICK_GIFS[0], nickname: ASSETS.TRICK_NICKNAMES[0], used: false },
+    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[1], gif: ASSETS.TRICK_GIFS[1], nickname: ASSETS.TRICK_NICKNAMES[1], used: false },
+    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[2], gif: ASSETS.TRICK_GIFS[2], nickname: ASSETS.TRICK_NICKNAMES[2], used: false },
+    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[3], gif: ASSETS.TRICK_GIFS[3], nickname: ASSETS.TRICK_NICKNAMES[3], used: false },
+    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[4], gif: ASSETS.TRICK_GIFS[4], nickname: ASSETS.TRICK_NICKNAMES[4], used: false },
+    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[5], gif: ASSETS.TRICK_GIFS[5], nickname: ASSETS.TRICK_NICKNAMES[5], used: false },
+    { type: 'TRICK', image: ASSETS.TRICK_IMAGES[6], gif: ASSETS.TRICK_GIFS[6], nickname: ASSETS.TRICK_NICKNAMES[6], used: false }
+  ];
+
+  // 🔀 SHUFFLE DOORS
   doors.sort(() => 0.5 - Math.random());
 
   const hallwayEmbed = new EmbedBuilder()
     .setTitle("🍷 Domain of Dionysius 🎭")
     .setDescription(
-      "Welcome to the Grand Hallway. Before you lie 10 mysterious doors.\n\n" +
+      "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
       "✨ **5 Doors** lead to grand party games...\n" +
-      "💀 **5 Doors** lead to chaotic tricks & madness.\n\n" +
+      "💀 **7 Doors** lead to chaotic tricks & madness.\n\n" +
       "*Choose your door wisely, mortal...*"
     )
     .setColor("#800020")
     .setImage(ASSETS.HALLWAY_IMAGE)
-    .setFooter({ text: "Dionysius is watching • Click a button below" });
+    .setFooter({ text: "Dionysius is watching • Auto-following chat" });
 
   const row1 = new ActionRowBuilder();
   const row2 = new ActionRowBuilder();
+  const row3 = new ActionRowBuilder();
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 12; i++) {
     const button = new ButtonBuilder()
       .setCustomId(`door_${i}`)
       .setLabel(`Door ${i + 1}`)
@@ -96,10 +166,104 @@ function createHallwayPayload() {
       .setStyle(ButtonStyle.Primary);
 
     if (i < 5) row1.addComponents(button);
-    else row2.addComponents(button);
+    else if (i < 10) row2.addComponents(button);
+    else row3.addComponents(button);
   }
 
-  return { embed: hallwayEmbed, components: [row1, row2], doors: doors };
+  return { embed: hallwayEmbed, components: [row1, row2, row3], doors: doors };
+}
+
+// -------------------------------------------------------------
+// CORE DOOR UNLOCK LOGIC (Shared between Button & Chat Command)
+// -------------------------------------------------------------
+async function processDoorUnlock(session, doorIndex, member, user) {
+  const selectedDoor = session.doors[doorIndex];
+
+  if (selectedDoor.used) {
+    return { success: false, reason: "ALREADY_OPEN" };
+  }
+
+  selectedDoor.used = true;
+
+  // Update button visual state across all 3 rows
+  session.components = session.components.map(row => {
+    const newRow = ActionRowBuilder.from(row);
+    newRow.components.forEach(button => {
+      if (button.data.custom_id === `door_${doorIndex}`) {
+        button.setDisabled(true);
+        button.setLabel(`Opened (${doorIndex + 1})`);
+        button.setStyle(selectedDoor.type === 'TRICK' ? ButtonStyle.Danger : ButtonStyle.Success);
+      }
+    });
+    return newRow;
+  });
+
+  const embeds = [];
+
+  // Outcome A: Game Door
+  if (selectedDoor.type === 'GAME') {
+    const game = selectedDoor.data;
+
+    const gameEmbed = new EmbedBuilder()
+      .setTitle(`🎉 FESTIVITY REVEALED: Door #${doorIndex + 1}`)
+      .setDescription(
+        `The heavy marble door opens with a warm flash of light!\n\n` +
+        `**Player:** ${user}\n` +
+        `**Game:** __${game.name}__\n\n` +
+        `📋 **Rules & Prompt:**\n${game.description}`
+      )
+      .setColor("#FFD700")
+      .setFooter({ text: "Let the festivities begin!" });
+
+    const primaryImage = game.image || ASSETS.DEFAULT_GAME_IMAGE;
+    gameEmbed.setImage(primaryImage);
+    embeds.push(gameEmbed);
+
+    if (game.gif) {
+      const gifEmbed = new EmbedBuilder()
+        .setColor("#FFD700")
+        .setImage(game.gif);
+      embeds.push(gifEmbed);
+    }
+  } 
+  // Outcome B: Trick Door
+  else if (selectedDoor.type === 'TRICK') {
+    const targetNickname = selectedDoor.nickname;
+    let nickChanged = false;
+
+    try {
+      if (member && member.manageable) {
+        await member.setNickname(targetNickname);
+        nickChanged = true;
+      }
+    } catch (err) {
+      console.log("Could not change nickname due to server role hierarchy.");
+    }
+
+    const trickEmbed = new EmbedBuilder()
+      .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
+      .setDescription(
+        `You reached into the dark hallway and Dionysius trapped you!\n\n` +
+        `😈 **Mortal Punished:** ${user}\n` +
+        (nickChanged ? `🎭 **New Identity:** You are now known as **${targetNickname}**!` : `🎭 **Fate:** Dionysius laughs at your foolishness!`)
+      )
+      .setColor("#FF0000");
+
+    if (selectedDoor.image) {
+      trickEmbed.setImage(selectedDoor.image);
+      embeds.push(trickEmbed);
+
+      const gifEmbed = new EmbedBuilder()
+        .setColor("#FF0000")
+        .setImage(selectedDoor.gif);
+      embeds.push(gifEmbed);
+    } else {
+      trickEmbed.setImage(selectedDoor.gif);
+      embeds.push(trickEmbed);
+    }
+  }
+
+  return { success: true, embeds: embeds };
 }
 
 // -------------------------------------------------------------
@@ -108,11 +272,10 @@ function createHallwayPayload() {
 client.once('ready', async () => {
   console.log(`🍷 Dionysius has awakened as ${client.user.tag}!`);
 
-  // Automatically register /domain and /doors slash commands with Discord
   try {
     const commands = [
-      { name: 'domain', description: 'Summon the Domain of Dionysius and the 10 Doors!' },
-      { name: 'doors', description: 'Summon the Domain of Dionysius and the 10 Doors!' }
+      { name: 'domain', description: 'Summon the Domain of Dionysius and the 12 Doors!' },
+      { name: 'doors', description: 'Summon the Domain of Dionysius and the 12 Doors!' }
     ];
     await client.application.commands.set(commands);
     console.log("✅ Registered /domain and /doors Slash Commands!");
@@ -122,19 +285,88 @@ client.once('ready', async () => {
 });
 
 // -------------------------------------------------------------
-// 5. TEXT COMMAND LISTENER (!domain or !doors)
+// 5. MESSAGE LISTENER (Commands, Chat Door Unlocking & Auto-Bump)
 // -------------------------------------------------------------
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  const command = message.content.toLowerCase().trim();
-  if (command === '!domain' || command === '!doors') {
+  const content = message.content.toLowerCase().trim();
+
+  // A) SUMMON COMMANDS (!domain or !doors)
+  if (content === '!domain' || content === '!doors') {
+    if (!hasHostRole(message.member)) {
+      return message.reply(`⛔ Only mortals with the **${REQUIRED_ROLE_NAME}** role can summon Dionysius!`);
+    }
+
     const payload = createHallwayPayload();
     const sentMessage = await message.channel.send({
       embeds: [payload.embed],
       components: payload.components
     });
-    activeSessions.set(sentMessage.id, payload.doors);
+
+    activeChannels.set(message.channel.id, {
+      messageId: sentMessage.id,
+      doors: payload.doors,
+      components: payload.components,
+      embed: payload.embed,
+      count: 0
+    });
+    return;
+  }
+
+  // B) CHAT DOOR UNLOCKING (e.g., typing "1", "7", "12" or "door 5")
+  if (activeChannels.has(message.channel.id)) {
+    const session = activeChannels.get(message.channel.id);
+
+    // Check if the message is a number between 1 and 12 (or "door X")
+    const doorMatch = content.match(/^(?:door\s*)?([1-9]|1[0-2])$/i);
+
+    if (doorMatch) {
+      if (!hasHostRole(message.member)) {
+        return message.reply(`⛔ Only hosts with the **${REQUIRED_ROLE_NAME}** role can open doors!`);
+      }
+
+      const doorNum = parseInt(doorMatch[1]);
+      const doorIndex = doorNum - 1;
+
+      const result = await processDoorUnlock(session, doorIndex, message.member, message.author);
+
+      if (!result.success && result.reason === "ALREADY_OPEN") {
+        return message.reply(`🚪 Door #${doorNum} has already been opened! Pick another.`);
+      }
+
+      // Update original hallway board message with newly disabled button
+      try {
+        const boardMsg = await message.channel.messages.fetch(session.messageId);
+        if (boardMsg) await boardMsg.edit({ components: session.components });
+      } catch (err) {
+        console.log("Could not update board message visually:", err);
+      }
+
+      // Send the unlocked door result in channel
+      await message.channel.send({ embeds: result.embeds });
+      return;
+    }
+
+    // C) 15-MESSAGE AUTO-BUMP LOGIC
+    session.count++;
+    if (session.count >= 15) {
+      session.count = 0;
+
+      try {
+        const oldMsg = await message.channel.messages.fetch(session.messageId);
+        if (oldMsg) await oldMsg.delete();
+      } catch (err) {
+        console.log("Old hallway message already deleted or not found.");
+      }
+
+      const newMsg = await message.channel.send({
+        embeds: [session.embed],
+        components: session.components
+      });
+
+      session.messageId = newMsg.id;
+    }
   }
 });
 
@@ -146,23 +378,43 @@ client.on('interactionCreate', async (interaction) => {
   // A) SLASH COMMAND HANDLING (/domain or /doors)
   if (interaction.isChatInputCommand()) {
     if (interaction.commandName === 'domain' || interaction.commandName === 'doors') {
+      if (!hasHostRole(interaction.member)) {
+        return interaction.reply({ 
+          content: `⛔ Only mortals with the **${REQUIRED_ROLE_NAME}** role can summon Dionysius!`, 
+          ephemeral: true 
+        });
+      }
+
       const payload = createHallwayPayload();
       const replyMessage = await interaction.reply({
         embeds: [payload.embed],
         components: payload.components,
         fetchReply: true
       });
-      activeSessions.set(replyMessage.id, payload.doors);
+
+      activeChannels.set(interaction.channelId, {
+        messageId: replyMessage.id,
+        doors: payload.doors,
+        components: payload.components,
+        embed: payload.embed,
+        count: 0
+      });
     }
     return;
   }
 
   // B) BUTTON CLICK HANDLING (DOORS)
   if (interaction.isButton()) {
-    const messageId = interaction.message.id;
-    const doors = activeSessions.get(messageId);
+    if (!hasHostRole(interaction.member)) {
+      return interaction.reply({ 
+        content: `⛔ Only hosts with the **${REQUIRED_ROLE_NAME}** role can unseal doors!`, 
+        ephemeral: true 
+      });
+    }
 
-    if (!doors) {
+    const session = activeChannels.get(interaction.channelId);
+
+    if (!session) {
       return interaction.reply({ 
         content: "🎭 This hallway has faded into ancient history. Summon a new one with `/domain`!", 
         ephemeral: true 
@@ -170,76 +422,20 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     const doorIndex = parseInt(interaction.customId.split('_')[1]);
-    const selectedDoor = doors[doorIndex];
+    const result = await processDoorUnlock(session, doorIndex, interaction.member, interaction.user);
 
-    if (selectedDoor.used) {
+    if (!result.success && result.reason === "ALREADY_OPEN") {
       return interaction.reply({ 
         content: "🚪 This door has already been unsealed! Choose another.", 
         ephemeral: true 
       });
     }
 
-    selectedDoor.used = true;
+    // Update current board message components
+    await interaction.message.edit({ components: session.components });
 
-    // Grey out / color the button
-    const updatedRows = interaction.message.components.map(row => {
-      const newRow = ActionRowBuilder.from(row);
-      newRow.components.forEach(button => {
-        if (button.data.custom_id === interaction.customId) {
-          button.setDisabled(true);
-          button.setLabel(`Opened (${doorIndex + 1})`);
-          button.setStyle(selectedDoor.type === 'TRICK' ? ButtonStyle.Danger : ButtonStyle.Success);
-        }
-      });
-      return newRow;
-    });
-
-    await interaction.message.edit({ components: updatedRows });
-
-    // Outcome A: Game Door
-    if (selectedDoor.type === 'GAME') {
-      const game = selectedDoor.data;
-      const gameEmbed = new EmbedBuilder()
-        .setTitle(`🎉 FESTIVITY REVEALED: Door #${doorIndex + 1}`)
-        .setDescription(
-          `The heavy marble door opens with a warm flash of light!\n\n` +
-          `**Player:** ${interaction.user}\n` +
-          `**Game:** __${game.name}__\n\n` +
-          `📋 **Rules & Prompt:**\n${game.description}`
-        )
-        .setColor("#FFD700")
-        .setThumbnail(ASSETS.GAME_IMAGE)
-        .setFooter({ text: "Let the festivities begin!" });
-
-      await interaction.reply({ embeds: [gameEmbed] });
-    } 
-    // Outcome B: Trick Door
-    else if (selectedDoor.type === 'TRICK') {
-      const randomGif = ASSETS.TRICK_GIFS[Math.floor(Math.random() * ASSETS.TRICK_GIFS.length)];
-      const randomNick = ASSETS.SILLY_NICKNAMES[Math.floor(Math.random() * ASSETS.SILLY_NICKNAMES.length)];
-      let nickChanged = false;
-
-      try {
-        if (interaction.member && interaction.member.manageable) {
-          await interaction.member.setNickname(randomNick);
-          nickChanged = true;
-        }
-      } catch (err) {
-        console.log("Could not change nickname due to server role hierarchy.");
-      }
-
-      const trickEmbed = new EmbedBuilder()
-        .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
-        .setDescription(
-          `You reached into the dark hallway and Dionysius trapped you!\n\n` +
-          `😈 **Mortal Punished:** ${interaction.user}\n` +
-          (nickChanged ? `🎭 **New Identity:** You are now known as **${randomNick}**!` : `🎭 **Fate:** Dionysius laughs at your foolishness!`)
-        )
-        .setColor("#FF0000")
-        .setImage(randomGif);
-
-      await interaction.reply({ embeds: [trickEmbed] });
-    }
+    // Send the reveal result
+    await interaction.reply({ embeds: result.embeds });
   }
 });
 
