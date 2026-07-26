@@ -24,19 +24,31 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers // 👈 ADD THIS INTENT
   ]
 });
 
-const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
+// -------------------------------------------------------------
+// 👑 PERMISSIONS CONFIGURATION
+// -------------------------------------------------------------
+// Paste your exact Discord User ID inside the quotes below:
+const OWNER_ID = "0ladybunny"; 
 
-// 👑 ROLE REQUIRED TO CONTROL THE BOT
 const REQUIRED_ROLE_NAME = "HOST B";
 
-// Helper function to check if a member has the required role
-function hasHostRole(member) {
-  if (!member || !member.roles) return false;
-  return member.roles.cache.some(role => role.name === REQUIRED_ROLE_NAME);
+// Helper function to check permissions
+function isAuthorized(member, user) {
+  // 1. You (the owner) ALWAYS have access, no matter what roles you have!
+  if (user && user.id === OWNER_ID) return true;
+
+  // 2. Anyone with the "HOST B" role also gets access
+  // (If you want ONLY YOU and nobody else, delete or comment out the lines below)
+  if (member && member.roles) {
+    return member.roles.cache.some(role => role.name === REQUIRED_ROLE_NAME);
+  }
+
+  return false;
 }
 
 // -------------------------------------------------------------
@@ -57,15 +69,15 @@ const ASSETS = {
     null                                                                   // Trick 7 Pic
   ],
 
-  // 🎬 TRICK SPECIFIC GIFS
+    // 🎬 TRICK SPECIFIC GIFS (Cleaned up direct links)
   TRICK_GIFS: [
-    "https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUyNXh1djJtaTE5ZmZvaHpsazlqbDQ0M2djaXR3YmQxeXp1bGp5cmJsZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/0SVAVxeJsnJ1WRMIPX/giphy.gif",
-    "https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUyNmcya3kzNHRwd3NxejZnM3lubng4dTlmbzZzZnJnN2ZwM3puc3Z2cCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hTwNnrHNl4rlK/giphy.gif",
-    "https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUya2xicTg1Y2VuM254NDJkNGdxM2kyMjUzNW8wenFvMmt6cHI0YW9uZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/2g6sCTsSoVuSfSxK4W/giphy.gif",
-    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",
-    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",
-    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",
-    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"
+    "https://media.giphy.com/media/0SVAVxeJsnJ1WRMIPX/giphy.gif", // Trick 1 GIF
+    "https://media.giphy.com/media/hTwNnrHNl4rlK/giphy.gif",       // Trick 2 GIF
+    "https://media.giphy.com/media/2g6sCTsSoVuSfSxK4W/giphy.gif",  // Trick 3 GIF
+    "https://media.giphy.com/media/3o72F8t9TDi2xVnxOE/giphy.gif",  // Trick 4 GIF
+    "https://media.giphy.com/media/l0HlCqV35hdEG2GUo/giphy.gif",  // Trick 5 GIF
+    "https://media.giphy.com/media/26tP3M3i03hoIyl6o/giphy.gif",  // Trick 6 GIF
+    "https://media.giphy.com/media/N35rW3vRNeaA/giphy.gif"        // Trick 7 GIF
   ],
 
   // 🎭 SPECIFIC TRICK NICKNAMES (Mapped 1-to-1 with the 7 Tricks above!)
@@ -119,6 +131,15 @@ const GAMES_LIST = [
 // Map to track active hallway per channel
 const activeChannels = new Map();
 
+// 🔀 True Fisher-Yates Unbiased Random Shuffle
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
 // Helper function to build hallway embed with 12 RANDOMLY MIXED DOORS
 function createHallwayPayload() {
   const doors = [
@@ -139,8 +160,8 @@ function createHallwayPayload() {
     { type: 'TRICK', image: ASSETS.TRICK_IMAGES[6], gif: ASSETS.TRICK_GIFS[6], nickname: ASSETS.TRICK_NICKNAMES[6], used: false }
   ];
 
-  // 🔀 SHUFFLE DOORS
-  doors.sort(() => 0.5 - Math.random());
+// ✅ ADD THIS NEW LINE:
+shuffle(doors);
 
   const hallwayEmbed = new EmbedBuilder()
     .setTitle("🍷 Domain of Dionysius 🎭")
@@ -229,23 +250,48 @@ async function processDoorUnlock(session, doorIndex, member, user) {
   // Outcome B: Trick Door
   else if (selectedDoor.type === 'TRICK') {
     const targetNickname = selectedDoor.nickname;
+    const guild = member.guild;
+    
+    // 1. Fetch all members to ensure role caching works
+    await guild.members.fetch();
+
+    // 2. Find the "BIRTHDAY BOY" role
+    const birthdayRole = guild.roles.cache.find(
+      r => r.name.toLowerCase() === "birthday boy"
+    );
+
+    let targetMember = null;
     let nickChanged = false;
 
-    try {
-      if (member && member.manageable) {
-        await member.setNickname(targetNickname);
-        nickChanged = true;
-      }
-    } catch (err) {
-      console.log("Could not change nickname due to server role hierarchy.");
+    // 3. Pick a member with the Birthday Boy role
+    if (birthdayRole && birthdayRole.members.size > 0) {
+      targetMember = birthdayRole.members.random(); // Picks the Birthday Boy!
     }
+
+    // 4. Change the Birthday Boy's nickname
+    if (targetMember) {
+      try {
+        if (targetMember.manageable) {
+          await targetMember.setNickname(targetNickname);
+          nickChanged = true;
+        } else {
+          console.log("Could not change Birthday Boy's nickname due to role hierarchy.");
+        }
+      } catch (err) {
+        console.log("Failed to change nickname:", err);
+      }
+    }
+
+    const embeds = [];
 
     const trickEmbed = new EmbedBuilder()
       .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
       .setDescription(
-        `You reached into the dark hallway and Dionysius trapped you!\n\n` +
-        `😈 **Mortal Punished:** ${user}\n` +
-        (nickChanged ? `🎭 **New Identity:** You are now known as **${targetNickname}**!` : `🎭 **Fate:** Dionysius laughs at your foolishness!`)
+        `Host ${user} opened a dark door and Dionysius targeted the Birthday Boy!\n\n` +
+        `🎂 **Victim:** ${targetMember ? targetMember : "No Birthday Boy found!"}\n` +
+        (nickChanged 
+          ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}**!` 
+          : `🎭 **Fate:** Dionysius laughs at your foolishness!`)
       )
       .setColor("#FF0000");
 
@@ -262,7 +308,6 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       embeds.push(trickEmbed);
     }
   }
-
   return { success: true, embeds: embeds };
 }
 
@@ -293,10 +338,9 @@ client.on('messageCreate', async (message) => {
   const content = message.content.toLowerCase().trim();
 
   // A) SUMMON COMMANDS (!domain or !doors)
-  if (content === '!domain' || content === '!doors') {
-    if (!hasHostRole(message.member)) {
-      return message.reply(`⛔ Only mortals with the **${REQUIRED_ROLE_NAME}** role can summon Dionysius!`);
-    }
+  if (!isAuthorized(message.member, message.author)) {
+  return message.reply(`⛔ You do not have permission to control Dionysius!`);
+}
 
     const payload = createHallwayPayload();
     const sentMessage = await message.channel.send({
@@ -378,12 +422,13 @@ client.on('interactionCreate', async (interaction) => {
   // A) SLASH COMMAND HANDLING (/domain or /doors)
   if (interaction.isChatInputCommand()) {
     if (interaction.commandName === 'domain' || interaction.commandName === 'doors') {
-      if (!hasHostRole(interaction.member)) {
-        return interaction.reply({ 
-          content: `⛔ Only mortals with the **${REQUIRED_ROLE_NAME}** role can summon Dionysius!`, 
-          ephemeral: true 
-        });
-      }
+      
+      if (!isAuthorized(interaction.member, interaction.user)) {
+  return interaction.reply({ 
+    content: `⛔ You do not have permission to control Dionysius!`, 
+    ephemeral: true 
+  });
+}
 
       const payload = createHallwayPayload();
       const replyMessage = await interaction.reply({
