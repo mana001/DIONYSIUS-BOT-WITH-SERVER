@@ -73,7 +73,7 @@ const ASSETS = {
     { 
       nickname: "GRANPA CHASER 👴", 
       image: null, 
-      gif: path.join(__dirname, 'assets', 'gif4.webp') 
+      gif: path.join(__dirname, 'assets', 'gif4.gif') 
     },
     { 
       nickname: "FOSTER FAIL 🥀", 
