@@ -155,41 +155,30 @@ const GAMES_LIST = [
 
 const activeChannels = new Map();
 
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
-
 function createHallwayPayload() {
-  const doors = [
-    // 6 Games
-    { type: 'GAME', data: GAMES_LIST[0], used: false },
-    { type: 'GAME', data: GAMES_LIST[1], used: false },
-    { type: 'GAME', data: GAMES_LIST[2], used: false },
-    { type: 'GAME', data: GAMES_LIST[3], used: false },
-    { type: 'GAME', data: GAMES_LIST[4], used: false },
-    { type: 'GAME', data: GAMES_LIST[5], used: false },
-    // 6 Tricks
-    { type: 'TRICK', data: ASSETS.TRICKS[0], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[1], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[2], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[3], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[4], used: false },
-    { type: 'TRICK', data: ASSETS.TRICKS[5], used: false }
-  ];
-
-  shuffle(doors);
+  // FIXED ASSIGNMENT: Games on 1, 2, 4, 7, 10, 11 (Indices 0,1,3,6,9,10)
+  // Tricks on 3, 5, 6, 8, 9, 12 (Indices 2,4,5,7,8,11)
+  const doors = [];
+  doors[0] = { type: 'GAME', data: GAMES_LIST[0], used: false };  // Door 1
+  doors[1] = { type: 'GAME', data: GAMES_LIST[1], used: false };  // Door 2
+  doors[2] = { type: 'TRICK', data: ASSETS.TRICKS[0], used: false }; // Door 3
+  doors[3] = { type: 'GAME', data: GAMES_LIST[2], used: false };  // Door 4
+  doors[4] = { type: 'TRICK', data: ASSETS.TRICKS[1], used: false }; // Door 5
+  doors[5] = { type: 'TRICK', data: ASSETS.TRICKS[2], used: false }; // Door 6
+  doors[6] = { type: 'GAME', data: GAMES_LIST[3], used: false };  // Door 7
+  doors[7] = { type: 'TRICK', data: ASSETS.TRICKS[3], used: false }; // Door 8
+  doors[8] = { type: 'TRICK', data: ASSETS.TRICKS[4], used: false }; // Door 9
+  doors[9] = { type: 'GAME', data: GAMES_LIST[4], used: false };  // Door 10
+  doors[10] = { type: 'GAME', data: GAMES_LIST[5], used: false }; // Door 11
+  doors[11] = { type: 'TRICK', data: ASSETS.TRICKS[5], used: false }; // Door 12
 
   const hallwayAttachment = new AttachmentBuilder(ASSETS.HALLWAY_IMAGE);
   const hallwayEmbed = new EmbedBuilder()
     .setTitle("🍷 Domain of Dionysius 🎭")
     .setDescription(
       "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
-      "✨ **6 Doors** lead to grand party games...\n" +
-      "💀 **6 Doors** lead to chaotic tricks & madness.\n\n" +
+      "✨ Doors lead to grand party games...\n" +
+      "💀 Doors lead to chaotic tricks & madness.\n\n" +
       "*Choose your door wisely, mortal...*"
     )
     .setColor("#800020")
@@ -240,7 +229,6 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       .setTitle(`🎉 FESTIVITY REVEALED: Door #${doorIndex + 1}`)
       .setDescription(
         `The heavy marble door opens with a warm flash of light!\n\n` +
-        `**Player:** ${user}\n` +
         `**Game:** __${game.name}__\n\n` +
         `📋 **Rules & Prompt:**\n${game.description}`
       )
@@ -270,9 +258,9 @@ async function processDoorUnlock(session, doorIndex, member, user) {
     
     let targetMember = null;
     let nickChanged = false;
+    let oldNickname = null;
 
     try {
-      // Directly fetch the user by their ID
       targetMember = await guild.members.fetch(BIRTHDAY_BOY_ID).catch(() => null);
     } catch (e) {
       console.log("Could not fetch user by ID:", e);
@@ -281,8 +269,23 @@ async function processDoorUnlock(session, doorIndex, member, user) {
     if (targetMember) {
       try {
         if (targetMember.manageable) {
+          oldNickname = targetMember.nickname;
           await targetMember.setNickname(targetNickname);
           nickChanged = true;
+
+          // ⏳ REVERT NICKNAME AFTER 5 MINUTES
+          setTimeout(async () => {
+            try {
+              const freshMember = await guild.members.fetch(BIRTHDAY_BOY_ID).catch(() => null);
+              if (freshMember && freshMember.manageable) {
+                await freshMember.setNickname(oldNickname);
+                console.log(`⏱️ Reverted nickname for ${freshMember.user.tag} back to normal.`);
+              }
+            } catch (revertErr) {
+              console.log("Failed to revert nickname after timer:", revertErr);
+            }
+          }, 5 * 60 * 1000);
+
         } else {
           console.log("❌ Target member is not manageable (Bot's role must be higher than theirs, and they cannot be the server owner).");
         }
@@ -300,7 +303,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
         `💬 *"${randomQuote}"*\n\n` +
         `🎂 **Victim:** ${targetMember ? targetMember : "Birthday Boy ID not found!"}\n` +
         (nickChanged 
-          ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}**!` 
+          ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}** for 5 minutes!` 
           : `🎭 **Fate:** Dionysius laughs at your foolishness!`)
       )
       .setColor("#FF0000");
@@ -314,10 +317,9 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       embeds.push(gifEmbed);
     }
     
-    embeds.unshift(trickEmbed); // Ensures text embed comes first
+    embeds.unshift(trickEmbed);
   }
 
-  // Only mark as used after everything has successfully generated
   selectedDoor.used = true;
 
   session.components = session.components.map(row => {
