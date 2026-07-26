@@ -288,12 +288,17 @@ async function processDoorUnlock(session, doorIndex, member, user) {
 
     if (targetMember) {
       try {
+        console.log(`🔍 Target found: ${targetMember.user.tag} | Manageable: ${targetMember.manageable}`);
+        
         if (targetMember.manageable) {
           await targetMember.setNickname(targetNickname);
           nickChanged = true;
+          console.log(`✅ Successfully changed nickname to: ${targetNickname}`);
+        } else {
+          console.log(`❌ FAILED TO CHANGE NICKNAME: targetMember.manageable is FALSE. Make sure the bot's role is HIGHER than the user's role and has 'Manage Nicknames' permission, and that the user is not the Server Owner.`);
         }
       } catch (err) {
-        console.log("Failed to change nickname:", err);
+        console.log("❌ Exception during setNickname:", err);
       }
     }
 
