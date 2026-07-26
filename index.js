@@ -95,7 +95,7 @@ const ASSETS = {
     { 
       nickname: "Sir Shits-A-Lot", 
       image: null, 
-      gif: path.join(__dirname, 'assets', 'gif3.gif') 
+      gif: path.join(__dirname, 'assets', 'gif3.webp') 
     }
   ]
 };
@@ -128,13 +128,13 @@ const GAMES_LIST = [
     name: "FACT OR FICTION? 📜", 
     description: "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif10.gif')
+    gif: path.join(__dirname, 'assets', 'gif10.webp)
   },
   { 
     name: "HOT SEAT 🔥", 
     description: "You are on the Hot Seat! ANSWER THE QUESTION WITH THE FIRST PERSON WHO COMES TO MIND! IT'S HOT HOT🌡🛀🔥🌶",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif11.gif')
+    gif: path.join(__dirname, 'assets', 'gif11.webp')
   },
   { 
     name: "WHO SAID IT? 🗣️", 
