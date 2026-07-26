@@ -65,7 +65,7 @@ function isAuthorized(member, user) {
 // 3. LOCAL ASSETS & GAME DATA MAPPING
 // -------------------------------------------------------------
 const ASSETS = {
-  HALLWAY_IMAGE: path.join(__dirname, 'assets', 'hallway.jpg'),
+  HALLWAY_IMAGE: path.join(__dirname, 'assets', 'hallway.png'),
   
   // 💀 TRICKS MAPPED TO LOCAL FILES & EXACT NICKNAMES (6 Tricks)
   TRICKS: [
