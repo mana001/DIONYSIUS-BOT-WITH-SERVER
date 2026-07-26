@@ -67,7 +67,7 @@ function isAuthorized(member, user) {
 const ASSETS = {
   HALLWAY_IMAGE: path.join(__dirname, 'assets', 'hallway.png'),
   
-  // 💀 TRICKS MAPPED TO LOCAL FILES & EXACT NICKNAMES (7 Tricks)
+  // 💀 TRICKS MAPPED TO EXACT LOCAL FILES & NICKNAMES (7 Tricks)
   TRICKS: [
     { 
       nickname: "GRANPA CHASER 👴", 
@@ -116,7 +116,7 @@ const TRICK_QUOTES = [
 ];
 
 // -------------------------------------------------------------
-// 📋 GAMES LIST (5 Games with Custom GIFs)
+// 📋 GAMES LIST (5 Games with Custom GIFs including WOULD YOU RATHER?)
 // -------------------------------------------------------------
 const GAMES_LIST = [
   { 
@@ -144,10 +144,10 @@ const GAMES_LIST = [
     gif: path.join(__dirname, 'assets', 'gif11.webp')
   },
   { 
-    name: "WHO SAID IT? 🗣️", 
-    description: "The host will show you a random out-of-context quote from the server history. Guess who said it!",
+    name: "WOULD YOU RATHER? 🤔", 
+    description: "Choose between two difficult or hilarious dilemmas and defend your choice!",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif12.gif')
+    gif: path.join(__dirname, 'assets', 'gif13.gif')
   }
 ];
 
@@ -328,7 +328,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       const gifName = path.basename(trickData.gif);
       trickEmbed.setImage(`attachment://${gifName}`);
       files.push(new AttachmentBuilder(trickData.gif));
-      embeds.push(gifEmbed);
+      embeds.push(trickEmbed);
     } else {
       embeds.push(trickEmbed);
     }
