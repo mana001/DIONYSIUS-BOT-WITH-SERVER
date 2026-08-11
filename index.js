@@ -155,6 +155,7 @@ const GAMES_LIST = [
 
 const activeChannels = new Map();
 const messageCounters = new Map(); // Tracks message count per channel for the auto-drop feature
+let autoDropActive = true; // Global flag to control whether auto-dropping is enabled
 
 function createHallwayPayload() {
   const doors = [];
@@ -199,6 +200,15 @@ function createHallwayPayload() {
     else if (i < 10) row2.addComponents(button);
     else row3.addComponents(button);
   }
+
+  // Add Leave / Stop button to Row 3
+  const leaveButton = new ButtonBuilder()
+    .setCustomId('bot_leave')
+    .setLabel('Leave / Stop')
+    .setEmoji('🍷')
+    .setStyle(ButtonStyle.Danger);
+
+  row3.addComponents(leaveButton);
 
   return { 
     embed: hallwayEmbed, 
@@ -350,50 +360,53 @@ client.once('ready', async () => {
   try {
     const commands = [
       { name: 'domain', description: 'Summon the Domain of Dionysius and the 12 Doors!' },
-      { name: 'doors', description: 'Summon the Domain of Dionysius and the 12 Doors!' }
+      { name: 'doors', description: 'Summon the Domain of Dionysius and the 12 Doors!' },
+      { name: 'leave', description: 'Make Dionysius retreat and stop auto-dropping entirely.' }
     ];
     await client.application.commands.set(commands);
-    console.log("✅ Registered /domain and /doors Slash Commands!");
+    console.log("✅ Registered /domain, /doors, and /leave Slash Commands!");
   } catch (err) {
     console.error("Failed to register slash commands:", err);
   }
 });
 
 // -------------------------------------------------------------
-// 5. CHAT INPUT LISTENER (Auto-Drop Every 20 Messages + Door Numbers)
+// 5. CHAT INPUT LISTENER (Auto-Drop Every 29 Messages + Door Numbers)
 // -------------------------------------------------------------
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  // 🔄 AUTO-DROP COUNTER LOGIC (Triggers every 20 messages in a channel)
-  let count = messageCounters.get(message.channelId) || 0;
-  count++;
+  // 🔄 AUTO-DROP COUNTER LOGIC (Triggers every 29 messages, ONLY if enabled & in active channels)
+  if (autoDropActive && activeChannels.has(message.channelId)) {
+    let count = messageCounters.get(message.channelId) || 0;
+    count++;
 
-  if (count >= 20) {
-    messageCounters.set(message.channelId, 0); // Reset counter
+    if (count >= 29) {
+      messageCounters.set(message.channelId, 0); // Reset counter
 
-    try {
-      const payload = createHallwayPayload();
-      const dropMessage = await message.channel.send({
-        embeds: [payload.embed],
-        components: payload.components,
-        files: payload.files
-      });
+      try {
+        const payload = createHallwayPayload();
+        const dropMessage = await message.channel.send({
+          embeds: [payload.embed],
+          components: payload.components,
+          files: payload.files
+        });
 
-      activeChannels.set(message.channelId, {
-        messageId: dropMessage.id,
-        doors: payload.doors,
-        components: payload.components,
-        embed: payload.embed,
-        files: payload.files
-      });
+        activeChannels.set(message.channelId, {
+          messageId: dropMessage.id,
+          doors: payload.doors,
+          components: payload.components,
+          embed: payload.embed,
+          files: payload.files
+        });
 
-      await message.channel.send({ content: `🍷 *The Domain of Dionysius has mysteriously dropped after 20 messages!*` }).catch(() => {});
-    } catch (err) {
-      console.error("Failed to auto-drop hallway:", err);
+        await message.channel.send({ content: `🍷 *The Domain of Dionysius has mysteriously dropped after 29 messages!*` }).catch(() => {});
+      } catch (err) {
+        console.error("Failed to auto-drop hallway:", err);
+      }
+    } else {
+      messageCounters.set(message.channelId, count);
     }
-  } else {
-    messageCounters.set(message.channelId, count);
   }
 
   // --- STANDARD DOOR OPENING VIA CHAT NUMBER (1-12) ---
@@ -454,6 +467,7 @@ client.on('interactionCreate', async (interaction) => {
         });
       }
 
+      autoDropActive = true; // Re-enable auto-dropping globally when summoned
       const payload = createHallwayPayload();
       const replyMessage = await interaction.reply({
         embeds: [payload.embed],
@@ -469,6 +483,24 @@ client.on('interactionCreate', async (interaction) => {
         embed: payload.embed,
         files: payload.files
       });
+
+      messageCounters.set(interaction.channelId, 0);
+    } 
+    else if (interaction.commandName === 'leave') {
+      if (!isAuthorized(interaction.member, interaction.user)) {
+        return interaction.reply({ 
+          content: `⛔ You do not have permission to control Dionysius!`, 
+          ephemeral: true 
+        });
+      }
+
+      autoDropActive = false;
+      activeChannels.clear();
+      messageCounters.clear();
+
+      return interaction.reply({ 
+        content: `🍷 **Dionysius has retreated! Auto-dropping has been completely stopped across all channels.**` 
+      });
     }
     return;
   }
@@ -478,6 +510,19 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ 
         content: `⛔ Only authorized hosts can unseal doors!`, 
         ephemeral: true 
+      });
+    }
+
+    // Handle Leave / Stop button click directly from the embed
+    if (interaction.customId === 'bot_leave') {
+      autoDropActive = false;
+      activeChannels.clear();
+      messageCounters.clear();
+
+      return interaction.update({ 
+        content: `🍷 **Dionysius has retreated! Auto-dropping has been completely stopped.**`, 
+        embeds: [], 
+        components: [] 
       });
     }
 
