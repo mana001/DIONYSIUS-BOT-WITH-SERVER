@@ -154,10 +154,9 @@ const GAMES_LIST = [
 ];
 
 const activeChannels = new Map();
+const messageCounters = new Map(); // Tracks message count per channel for the auto-drop feature
 
 function createHallwayPayload() {
-  // FIXED ASSIGNMENT: Games on 1, 2, 4, 7, 10, 11 (Indices 0,1,3,6,9,10)
-  // Tricks on 3, 5, 6, 8, 9, 12 (Indices 2,4,5,7,8,11)
   const doors = [];
   doors[0] = { type: 'GAME', data: GAMES_LIST[0], used: false };  // Door 1
   doors[1] = { type: 'GAME', data: GAMES_LIST[1], used: false };  // Door 2
@@ -210,7 +209,7 @@ function createHallwayPayload() {
 }
 
 // -------------------------------------------------------------
-// CORE DOOR UNLOCK LOGIC (Crash-Proof: Only locks when successful)
+// CORE DOOR UNLOCK LOGIC
 // -------------------------------------------------------------
 async function processDoorUnlock(session, doorIndex, member, user) {
   const selectedDoor = session.doors[doorIndex];
@@ -273,7 +272,6 @@ async function processDoorUnlock(session, doorIndex, member, user) {
           await targetMember.setNickname(targetNickname);
           nickChanged = true;
 
-          // ⏳ REVERT NICKNAME AFTER 5 MINUTES
           setTimeout(async () => {
             try {
               const freshMember = await guild.members.fetch(BIRTHDAY_BOY_ID).catch(() => null);
@@ -287,7 +285,7 @@ async function processDoorUnlock(session, doorIndex, member, user) {
           }, 5 * 60 * 1000);
 
         } else {
-          console.log("❌ Target member is not manageable (Bot's role must be higher than theirs, and they cannot be the server owner).");
+          console.log("❌ Target member is not manageable.");
         }
       } catch (err) {
         console.log("Failed to change nickname:", err);
@@ -308,7 +306,6 @@ async function processDoorUnlock(session, doorIndex, member, user) {
       )
       .setColor("#FF0000");
 
-    // 🛠️ FIXED: Now checks and attaches trickData.image (so img1, img2, img3 show up correctly where you placed them)
     if (trickData.image) {
       const imgName = path.basename(trickData.image);
       trickEmbed.setImage(`attachment://${imgName}`);
@@ -363,11 +360,43 @@ client.once('ready', async () => {
 });
 
 // -------------------------------------------------------------
-// 5. CHAT INPUT LISTENER (Type Door Number 1-12 to Open)
+// 5. CHAT INPUT LISTENER (Auto-Drop Every 20 Messages + Door Numbers)
 // -------------------------------------------------------------
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
+  // 🔄 AUTO-DROP COUNTER LOGIC (Triggers every 20 messages in a channel)
+  let count = messageCounters.get(message.channelId) || 0;
+  count++;
+
+  if (count >= 20) {
+    messageCounters.set(message.channelId, 0); // Reset counter
+
+    try {
+      const payload = createHallwayPayload();
+      const dropMessage = await message.channel.send({
+        embeds: [payload.embed],
+        components: payload.components,
+        files: payload.files
+      });
+
+      activeChannels.set(message.channelId, {
+        messageId: dropMessage.id,
+        doors: payload.doors,
+        components: payload.components,
+        embed: payload.embed,
+        files: payload.files
+      });
+
+      await message.channel.send({ content: `🍷 *The Domain of Dionysius has mysteriously dropped after 20 messages!*` }).catch(() => {});
+    } catch (err) {
+      console.error("Failed to auto-drop hallway:", err);
+    }
+  } else {
+    messageCounters.set(message.channelId, count);
+  }
+
+  // --- STANDARD DOOR OPENING VIA CHAT NUMBER (1-12) ---
   const trimmed = message.content.trim();
   const doorNum = parseInt(trimmed);
   
