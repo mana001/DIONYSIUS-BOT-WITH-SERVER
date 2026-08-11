@@ -51,7 +51,7 @@ const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 // 👑 PERMISSIONS CONFIGURATION
 // -------------------------------------------------------------
 const OWNER_ID = "YOUR_NUMERIC_DISCORD_USER_ID";
-const BIRTHDAY_BOY_ID = "1082430344936042606";
+const BIRTHDAY_BOY_ID = "1363453807949779064";
 const REQUIRED_ROLE_NAME = "HOST B";
 
 function isAuthorized(member, user) {
