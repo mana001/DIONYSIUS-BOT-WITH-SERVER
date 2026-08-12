@@ -119,7 +119,7 @@ const GAMES_LIST = [
     name: "EMOJI STORY 🎭", 
     description: "Tell a short story using **ONLY EMOJIS**. Vagg has to guess what happened!",
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif8.webp')
+    gif: path.join(__dirname, 'assets', 'gif8.gif')
   },
   { 
     name: "HOW WELL DO YOU KNOW YOUR CLICK? 👥", 
