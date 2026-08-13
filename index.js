@@ -4,36 +4,45 @@
 const express = require('express');
 const https = require('https');
 const path = require('path');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('🍷 Dionysius is awake and watching!'));
-app.listen(PORT, '0.0.0.0', () => console.log(`Server listening on port ${PORT}`));
+app.get('/', (req, res) => {
+  res.send('🍷 Dionysius is awake and watching!');
+});
 
-// ⏰ SELF-PING LOGIC (Keeps Render instance awake - Every 5 mins)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
+// ⏰ SELF-PING LOGIC
 const APP_URL = process.env.RENDER_EXTERNAL_URL || "";
 
 setInterval(() => {
   if (APP_URL) {
     https.get(APP_URL, (res) => {
-      console.log(`⏰ Keep-alive ping sent to ${APP_URL} (Status: ${res.statusCode})`);
+      console.log(
+        `⏰ Keep-alive ping sent to ${APP_URL} (Status: ${res.statusCode})`
+      );
     }).on('error', (err) => {
       console.log(`⚠️ Keep-alive ping failed: ${err.message}`);
     });
   }
 }, 5 * 60 * 1000);
 
+
 // -------------------------------------------------------------
 // 2. DISCORD CLIENT SETUP & INTENTS
 // -------------------------------------------------------------
-const { 
-  Client, 
-  GatewayIntentBits, 
-  EmbedBuilder, 
-  ActionRowBuilder, 
-  ButtonBuilder, 
+const {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
   ButtonStyle,
-  AttachmentBuilder 
+  AttachmentBuilder
 } = require('discord.js');
 
 const client = new Client({
@@ -45,7 +54,15 @@ const client = new Client({
   ]
 });
 
+// -------------------------------------------------------------
+// 🔐 BOT TOKEN
+// -------------------------------------------------------------
+// Keep the real token inside Render Environment Variables:
+// DISCORD_TOKEN = your actual bot token
+//
+// DO NOT paste your real token into this file.
 const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
+
 
 // -------------------------------------------------------------
 // 👑 PERMISSIONS CONFIGURATION
@@ -54,791 +71,1891 @@ const OWNER_ID = "726748866023784490";
 const BIRTHDAY_BOY_ID = "1363453807949779064";
 const REQUIRED_ROLE_NAME = "HOST B";
 
-// 🏛️ ROLE TO TAG WHEN DIONYSIUS ARRIVES
-// Replace this with the actual Role ID of @Olympians
-const OLYMPIANS_ROLE_ID = "PASTE_YOUR_OLYMPIANS_ROLE_ID_HERE";
+// 🏛️ ROLE NAME TO TAG
+// Your actual Discord role is named "OLYMPIAN"
+// so you do NOT need to find/copy the role ID.
+const OLYMPIANS_ROLE_NAME = "OLYMPIAN";
 
 function isAuthorized(member, user) {
-  if (user && user.id === OWNER_ID) return true;
-  if (member && member.roles) {
-    return member.roles.cache.some(role => role.name === REQUIRED_ROLE_NAME);
+  // Owner always has permission
+  if (user && user.id === OWNER_ID) {
+    return true;
   }
+
+  // HOST B role has permission
+  if (member && member.roles) {
+    return member.roles.cache.some(
+      role => role.name === REQUIRED_ROLE_NAME
+    );
+  }
+
   return false;
 }
 
+
 // -------------------------------------------------------------
-// 3. LOCAL ASSETS & GAME DATA MAPPING
-// 6 Games & 6 Tricks = 12 Doors
+// 3. LOCAL ASSETS & GAME DATA
+// 6 GAMES + 6 TRICKS = 12 DOORS
 // -------------------------------------------------------------
 const ASSETS = {
-  HALLWAY_IMAGE: path.join(__dirname, 'assets', 'hallway.png'),
-  
-  // 💀 6 TRICKS MAPPED TO EXACT LOCAL FILES & NICKNAMES
+
+  HALLWAY_IMAGE: path.join(
+    __dirname,
+    'assets',
+    'hallway.png'
+  ),
+
+  // -----------------------------------------------------------
+  // 💀 6 TRICKS
+  // -----------------------------------------------------------
   TRICKS: [
-    { 
-      nickname: "GRANPA CHASER 👴", 
-      image: null, 
-      gif: path.join(__dirname, 'assets', 'gif4.gif') 
+
+    {
+      nickname: "GRANPA CHASER 👴",
+      image: null,
+      gif: path.join(
+        __dirname,
+        'assets',
+        'gif4.gif'
+      )
     },
-    { 
-      nickname: "FOSTER FAIL 🥀", 
-      image: path.join(__dirname, 'assets', 'img1.png'), 
-      gif: path.join(__dirname, 'assets', 'gif5.gif') 
+
+    {
+      nickname: "FOSTER FAIL 🥀",
+      image: path.join(
+        __dirname,
+        'assets',
+        'img1.png'
+      ),
+      gif: path.join(
+        __dirname,
+        'assets',
+        'gif5.gif'
+      )
     },
-    { 
-      nickname: "ROBERT CARTER FELONI", 
-      image: path.join(__dirname, 'assets', 'img2.png'), 
-      gif: path.join(__dirname, 'assets', 'gif1.gif') 
+
+    {
+      nickname: "ROBERT CARTER FELONI",
+      image: path.join(
+        __dirname,
+        'assets',
+        'img2.png'
+      ),
+      gif: path.join(
+        __dirname,
+        'assets',
+        'gif1.gif'
+      )
     },
-    { 
-      nickname: "Goblin Snack 🥒", 
-      image: path.join(__dirname, 'assets', 'img3.png'), 
-      gif: path.join(__dirname, 'assets', 'gif7.gif') 
+
+    {
+      nickname: "Goblin Snack 🥒",
+      image: path.join(
+        __dirname,
+        'assets',
+        'img3.png'
+      ),
+      gif: path.join(
+        __dirname,
+        'assets',
+        'gif7.gif'
+      )
     },
-    { 
-      nickname: "THE REAL RAG DOLL 🪆", 
-      image: null, 
-      gif: path.join(__dirname, 'assets', 'gif2.gif') 
+
+    {
+      nickname: "THE REAL RAG DOLL 🪆",
+      image: null,
+      gif: path.join(
+        __dirname,
+        'assets',
+        'gif2.gif'
+      )
     },
-    { 
-      nickname: "Sir Shits-A-Lot", 
-      image: null, 
-      gif: path.join(__dirname, 'assets', 'gif3.webp') 
+
+    {
+      nickname: "Sir Shits-A-Lot",
+      image: null,
+      gif: path.join(
+        __dirname,
+        'assets',
+        'gif3.webp'
+      )
     }
+
   ]
 };
 
-// 💬 TRICK RANDOM QUOTES POOL
-const TRICK_QUOTES = [
-  "Ah, exactly what I always wanted: absolute disappointment.",
-  "Let me guess, the real prize is the friends we lost along the way?",
-  "Oh, brilliant. Should I frame this or just cry now?",
-  "Womp womp. Better luck next time, Champion!"
-];
 
 // -------------------------------------------------------------
-// 📋 6 GAMES LIST
+// 💬 RANDOM TRICK QUOTES
+// -------------------------------------------------------------
+const TRICK_QUOTES = [
+
+  "Ah, exactly what I always wanted: absolute disappointment.",
+
+  "Let me guess, the real prize is the friends we lost along the way?",
+
+  "Oh, brilliant. Should I frame this or just cry now?",
+
+  "Womp womp. Better luck next time, Champion!"
+
+];
+
+
+// -------------------------------------------------------------
+// 📋 6 GAMES
 // -------------------------------------------------------------
 const GAMES_LIST = [
-  { 
-    name: "EMOJI STORY 🎭", 
-    description: "Tell a short story using **ONLY EMOJIS**. Vagg has to guess what happened!",
+
+  {
+    name: "EMOJI STORY 🎭",
+
+    description:
+      "Tell a short story using **ONLY EMOJIS**. Vagg has to guess what happened!",
+
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif8.gif')
-  }, 
-  { 
-    name: "HOW WELL DO YOU KNOW YOUR CLICK? 👥", 
-    description: "You have to answer questions about your click!",
+
+    gif: path.join(
+      __dirname,
+      'assets',
+      'gif8.gif'
+    )
+  },
+
+  {
+    name: "HOW WELL DO YOU KNOW YOUR CLICK? 👥",
+
+    description:
+      "You have to answer questions about your click!",
+
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif9.gif')
-  }, 
-  { 
-    name: "FACT OR FICTION? 📜", 
-    description: "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
+
+    gif: path.join(
+      __dirname,
+      'assets',
+      'gif9.gif'
+    )
+  },
+
+  {
+    name: "FACT OR FICTION? 📜",
+
+    description:
+      "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
+
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif10.webp')
-  }, 
-  { 
-    name: "HOT SEAT 🔥", 
-    description: "You are on the Hot Seat! ANSWER THE QUESTION WITH THE FIRST PERSON WHO COMES TO MIND! IT'S HOT HOT🌡🛀🔥🌶",
+
+    gif: path.join(
+      __dirname,
+      'assets',
+      'gif10.webp'
+    )
+  },
+
+  {
+    name: "HOT SEAT 🔥",
+
+    description:
+      "You are on the Hot Seat! ANSWER THE QUESTION WITH THE FIRST PERSON WHO COMES TO MIND! IT'S HOT HOT🌡🛀🔥🌶",
+
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif11.webp')
-  }, 
-  { 
-    name: "WHO SAID IT? 🗣️", 
-    description: "The host will show you a random out-of-context quote from the server history. Guess who said it!",
+
+    gif: path.join(
+      __dirname,
+      'assets',
+      'gif11.webp'
+    )
+  },
+
+  {
+    name: "WHO SAID IT? 🗣️",
+
+    description:
+      "The host will show you a random out-of-context quote from the server history. Guess who said it!",
+
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif12.gif')
-  }, 
-  { 
-    name: "WOULD YOU RATHER? 🤔", 
-    description: "Choose between two difficult or hilarious dilemmas and defend your choice!",
+
+    gif: path.join(
+      __dirname,
+      'assets',
+      'gif12.gif'
+    )
+  },
+
+  {
+    name: "WOULD YOU RATHER? 🤔",
+
+    description:
+      "Choose between two difficult or hilarious dilemmas and defend your choice!",
+
     image: null,
-    gif: path.join(__dirname, 'assets', 'gif13.gif')
+
+    gif: path.join(
+      __dirname,
+      'assets',
+      'gif13.gif'
+    )
   }
+
 ];
 
-const activeChannels = new Map();
-const messageCounters = new Map();
 
-// 🏛️ Channels where Dionysius has arrived but is waiting
-// for the host to say "Open the doors Dionysius"
+// -------------------------------------------------------------
+// 🗂️ ACTIVE CHANNEL DATA
+// -------------------------------------------------------------
+const activeChannels = new Map();
+
+// Channels where /domain has been used
+// and Dionysius is waiting for:
+// OPEN THE DOORS DIONYSIUS
 const waitingForDoors = new Set();
 
-let autoDropActive = true;
+
+// -------------------------------------------------------------
+// 🍷 FIND THE OLYMPIAN ROLE
+// -------------------------------------------------------------
+function getOlympianRole(guild) {
+
+  if (!guild) {
+    return null;
+  }
+
+  return guild.roles.cache.find(
+    role => role.name === OLYMPIANS_ROLE_NAME
+  ) || null;
+}
+
 
 // -------------------------------------------------------------
 // 🍷 DIONYSIUS ARRIVAL MESSAGE
 // -------------------------------------------------------------
-function createDionysiusArrivalMessage() {
+function createDionysiusArrivalMessage(guild) {
+
+  const olympianRole = getOlympianRole(guild);
+
+  const content = olympianRole
+    ? `<@&${olympianRole.id}>`
+    : `🏛️ **OLYMPIAN**`;
+
+  const embed = new EmbedBuilder()
+
+    .setTitle("🍷 DIONYSIUS HAS ARRIVED")
+
+    .setDescription(
+      `The birthday chaos has officially begun. 😈\n\n` +
+
+      `🎂 Born on the **12th**, so obviously I brought **12 doors**.\n\n` +
+
+      `🎉 **6 games**\n` +
+      `💀 **6 things I refuse to explain**\n\n` +
+
+      `The wine is flowing. The birthday boy is in danger. 🍇🔥\n\n` +
+
+      `**Now someone say it...** 👀\n\n` +
+
+      `🚪 **OPEN THE DOORS DIONYSIUS** 🚪`
+    )
+
+    .setColor("#800020")
+
+    .setFooter({
+      text: "Dionysius is watching..."
+    });
+
+
   return {
-    content: `<@&${OLYMPIANS_ROLE_ID}>`,
-    embeds: [
-      new EmbedBuilder()
-        .setTitle("🍷 DIONYSIUS HAS ARRIVED")
-        .setDescription(
-          `The birthday chaos has officially begun. 😈\n\n` +
-          `Born on the 12th, so obviously I brought 12 doors\n` +
-          `🎉 **6 games**\n` +
-          `and **6 things I refuse to explain.** 💀🔥\n\n` +
-          `Now light it up. It’s my birthday, so behave accordingly. 🕺🍇\n\n` +
-          `**LET. GET. STARTED.**\` 🚪`
-        )
-        .setColor("#800020")
-        .setFooter({ text: "Dionysius is watching..." })
-    ],
-    allowedMentions: {
-      roles: [OLYMPIANS_ROLE_ID]
-    }
+    content,
+    embeds: [embed],
+
+    allowedMentions: olympianRole
+      ? {
+          roles: [olympianRole.id]
+        }
+      : {
+          parse: []
+        }
   };
 }
 
-// -------------------------------------------------------------
-// 🚪 SEND THE 12 DOOR HALLWAY
-// -------------------------------------------------------------
-async function openHallway(channel) {
-  const payload = createHallwayPayload();
-
-  const hallwayMessage = await channel.send({
-    content: `🍷 **THE DOORS ARE OPEN. LET THE CHAOS BEGIN.** 🚪`,
-    embeds: [payload.embed],
-    components: payload.components,
-    files: payload.files
-  });
-
-  activeChannels.set(channel.id, {
-    messageId: hallwayMessage.id,
-    doors: payload.doors,
-    components: payload.components,
-    embed: payload.embed,
-    files: payload.files
-  });
-
-  messageCounters.set(channel.id, 0);
-
-  console.log(`🚪 The 12 doors have opened in channel ${channel.id}.`);
-
-  return hallwayMessage;
-}
 
 // -------------------------------------------------------------
-// CREATE HALLWAY PAYLOAD
+// 🚪 CREATE THE 12-DOOR HALLWAY
 // -------------------------------------------------------------
 function createHallwayPayload() {
+
   const doors = [];
 
-  doors[0] = { type: 'GAME', data: GAMES_LIST[0], used: false };  // Door 1
-  doors[1] = { type: 'GAME', data: GAMES_LIST[1], used: false };  // Door 2
-  doors[2] = { type: 'TRICK', data: ASSETS.TRICKS[0], used: false }; // Door 3
-  doors[3] = { type: 'GAME', data: GAMES_LIST[2], used: false };  // Door 4
-  doors[4] = { type: 'TRICK', data: ASSETS.TRICKS[1], used: false }; // Door 5
-  doors[5] = { type: 'TRICK', data: ASSETS.TRICKS[2], used: false }; // Door 6
-  doors[6] = { type: 'GAME', data: GAMES_LIST[3], used: false };  // Door 7
-  doors[7] = { type: 'TRICK', data: ASSETS.TRICKS[3], used: false }; // Door 8
-  doors[8] = { type: 'TRICK', data: ASSETS.TRICKS[4], used: false }; // Door 9
-  doors[9] = { type: 'GAME', data: GAMES_LIST[4], used: false };  // Door 10
-  doors[10] = { type: 'GAME', data: GAMES_LIST[5], used: false }; // Door 11
-  doors[11] = { type: 'TRICK', data: ASSETS.TRICKS[5], used: false }; // Door 12
 
-  const hallwayAttachment = new AttachmentBuilder(ASSETS.HALLWAY_IMAGE);
+  // -----------------------------------------------------------
+  // DOOR 1
+  // -----------------------------------------------------------
+  doors[0] = {
+    type: 'GAME',
+    data: GAMES_LIST[0],
+    used: false
+  };
 
+
+  // -----------------------------------------------------------
+  // DOOR 2
+  // -----------------------------------------------------------
+  doors[1] = {
+    type: 'GAME',
+    data: GAMES_LIST[1],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 3
+  // -----------------------------------------------------------
+  doors[2] = {
+    type: 'TRICK',
+    data: ASSETS.TRICKS[0],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 4
+  // -----------------------------------------------------------
+  doors[3] = {
+    type: 'GAME',
+    data: GAMES_LIST[2],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 5
+  // -----------------------------------------------------------
+  doors[4] = {
+    type: 'TRICK',
+    data: ASSETS.TRICKS[1],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 6
+  // -----------------------------------------------------------
+  doors[5] = {
+    type: 'TRICK',
+    data: ASSETS.TRICKS[2],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 7
+  // -----------------------------------------------------------
+  doors[6] = {
+    type: 'GAME',
+    data: GAMES_LIST[3],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 8
+  // -----------------------------------------------------------
+  doors[7] = {
+    type: 'TRICK',
+    data: ASSETS.TRICKS[3],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 9
+  // -----------------------------------------------------------
+  doors[8] = {
+    type: 'TRICK',
+    data: ASSETS.TRICKS[4],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 10
+  // -----------------------------------------------------------
+  doors[9] = {
+    type: 'GAME',
+    data: GAMES_LIST[4],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 11
+  // -----------------------------------------------------------
+  doors[10] = {
+    type: 'GAME',
+    data: GAMES_LIST[5],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // DOOR 12
+  // -----------------------------------------------------------
+  doors[11] = {
+    type: 'TRICK',
+    data: ASSETS.TRICKS[5],
+    used: false
+  };
+
+
+  // -----------------------------------------------------------
+  // HALLWAY IMAGE
+  // -----------------------------------------------------------
+  const hallwayAttachment =
+    new AttachmentBuilder(
+      ASSETS.HALLWAY_IMAGE
+    );
+
+
+  // -----------------------------------------------------------
+  // HALLWAY EMBED
+  // -----------------------------------------------------------
   const hallwayEmbed = new EmbedBuilder()
-    .setTitle("🍷 Domain of Dionysius 🎭")
-    .setDescription(
-      "Welcome to the Grand Hallway. Before you lie 12 mysterious doors.\n\n" +
-      "✨ Doors lead to grand party games...\n" +
-      "💀 Doors lead to chaotic tricks & madness.\n\n" +
-      "*Choose your door wisely, mortal...*"
-    )
-    .setColor("#800020")
-    .setImage(`attachment://${path.basename(ASSETS.HALLWAY_IMAGE)}`)
-    .setFooter({ text: "Dionysius is watching" });
 
+    .setTitle(
+      "🍷 DOMAIN OF DIONYSIUS 🎭"
+    )
+
+    .setDescription(
+      `Welcome to the Grand Hallway.\n\n` +
+
+      `🎂 **12 August = 12 mysterious doors.**\n\n` +
+
+      `✨ **6 doors lead to party games...**\n` +
+
+      `💀 **6 doors lead to chaos, tricks & madness...**\n\n` +
+
+      `*Choose your door wisely, mortal...*`
+    )
+
+    .setColor("#800020")
+
+    .setImage(
+      `attachment://${path.basename(
+        ASSETS.HALLWAY_IMAGE
+      )}`
+    )
+
+    .setFooter({
+      text: "Dionysius is watching"
+    });
+
+
+  // -----------------------------------------------------------
+  // BUTTON ROWS
+  // -----------------------------------------------------------
   const row1 = new ActionRowBuilder();
   const row2 = new ActionRowBuilder();
   const row3 = new ActionRowBuilder();
 
+
   for (let i = 0; i < 12; i++) {
+
     const button = new ButtonBuilder()
-      .setCustomId(`door_${i}`)
-      .setLabel(`Door ${i + 1}`)
+
+      .setCustomId(
+        `door_${i}`
+      )
+
+      .setLabel(
+        `Door ${i + 1}`
+      )
+
       .setEmoji("🚪")
-      .setStyle(ButtonStyle.Primary);
+
+      .setStyle(
+        ButtonStyle.Primary
+      );
+
 
     if (i < 5) {
+
       row1.addComponents(button);
+
     } else if (i < 10) {
+
       row2.addComponents(button);
+
     } else {
+
       row3.addComponents(button);
+
     }
   }
 
-  // Add Leave / Stop button to Row 3
-  const leaveButton = new ButtonBuilder()
-    .setCustomId('bot_leave')
-    .setLabel('Leave / Stop')
-    .setEmoji('🍷')
-    .setStyle(ButtonStyle.Danger);
 
-  row3.addComponents(leaveButton);
+  // -----------------------------------------------------------
+  // 🍷 LEAVE BUTTON
+  // -----------------------------------------------------------
+  const leaveButton =
+    new ButtonBuilder()
 
-  return { 
-    embed: hallwayEmbed, 
-    components: [row1, row2, row3], 
-    doors: doors, 
-    files: [hallwayAttachment] 
+      .setCustomId(
+        'bot_leave'
+      )
+
+      .setLabel(
+        'Leave / Stop'
+      )
+
+      .setEmoji('🍷')
+
+      .setStyle(
+        ButtonStyle.Danger
+      );
+
+
+  row3.addComponents(
+    leaveButton
+  );
+
+
+  return {
+
+    embed: hallwayEmbed,
+
+    components: [
+      row1,
+      row2,
+      row3
+    ],
+
+    doors,
+
+    files: [
+      hallwayAttachment
+    ]
+
   };
 }
+
+
+// -------------------------------------------------------------
+// 🚪 OPEN HALLWAY
+// -------------------------------------------------------------
+async function openHallway(channel) {
+
+  const payload =
+    createHallwayPayload();
+
+
+  const hallwayMessage =
+    await channel.send({
+
+      content:
+        `🍷 **THE DOORS ARE OPEN. LET THE CHAOS BEGIN.** 🚪`,
+
+      embeds: [
+        payload.embed
+      ],
+
+      components:
+        payload.components,
+
+      files:
+        payload.files
+
+    });
+
+
+  activeChannels.set(
+    channel.id,
+    {
+
+      messageId:
+        hallwayMessage.id,
+
+      doors:
+        payload.doors,
+
+      components:
+        payload.components,
+
+      embed:
+        payload.embed,
+
+      files:
+        payload.files
+
+    }
+  );
+
+
+  console.log(
+    `🚪 The 12 doors have opened in channel ${channel.id}.`
+  );
+
+
+  return hallwayMessage;
+}
+
 
 // -------------------------------------------------------------
 // CORE DOOR UNLOCK LOGIC
 // -------------------------------------------------------------
-async function processDoorUnlock(session, doorIndex, member, user) {
-  const selectedDoor = session.doors[doorIndex];
+async function processDoorUnlock(
+  session,
+  doorIndex,
+  member,
+  user
+) {
+
+  const selectedDoor =
+    session.doors[doorIndex];
+
 
   if (selectedDoor.used) {
-    return { success: false, reason: "ALREADY_OPEN" };
+
+    return {
+      success: false,
+      reason: "ALREADY_OPEN"
+    };
+
   }
+
 
   const embeds = [];
   const files = [];
 
+
+  // ===========================================================
+  // 🎉 GAME DOOR
+  // ===========================================================
   if (selectedDoor.type === 'GAME') {
-    const game = selectedDoor.data;
 
-    const gameEmbed = new EmbedBuilder()
-      .setTitle(`🎉 FESTIVITY REVEALED: Door #${doorIndex + 1}`)
-      .setDescription(
-        `The heavy marble door opens with a warm flash of light!\n\n` +
-        `**Game:** __${game.name}__\n\n` +
-        `📋 **Rules & Prompt:**\n${game.description}`
-      )
-      .setColor("#FFD700")
-      .setFooter({ text: "Let the festivities begin!" });
+    const game =
+      selectedDoor.data;
 
-    if (game.image) {
-      const imgName = path.basename(game.image);
-      gameEmbed.setImage(`attachment://${imgName}`);
-      files.push(new AttachmentBuilder(game.image));
-    }
 
-    embeds.push(gameEmbed);
+    const gameEmbed =
+      new EmbedBuilder()
 
-    if (game.gif) {
-      const gifName = path.basename(game.gif);
-
-      const gifEmbed = new EmbedBuilder()
-        .setColor("#FFD700")
-        .setImage(`attachment://${gifName}`);
-
-      files.push(new AttachmentBuilder(game.gif));
-      embeds.push(gifEmbed);
-    }
-  } 
-  
-  else if (selectedDoor.type === 'TRICK') {
-    const trickData = selectedDoor.data;
-    const targetNickname = trickData.nickname;
-    const guild = member.guild;
-    
-    let targetMember = null;
-    let nickChanged = false;
-    let oldNickname = null;
-
-    try {
-      targetMember = await guild.members.fetch(BIRTHDAY_BOY_ID).catch(() => null);
-    } catch (e) {
-      console.log("Could not fetch user by ID:", e);
-    }
-
-    if (targetMember) {
-      try {
-        if (targetMember.manageable) {
-          oldNickname = targetMember.nickname;
-
-          await targetMember.setNickname(targetNickname);
-          nickChanged = true;
-
-          setTimeout(async () => {
-            try {
-              const freshMember = await guild.members
-                .fetch(BIRTHDAY_BOY_ID)
-                .catch(() => null);
-
-              if (freshMember && freshMember.manageable) {
-                await freshMember.setNickname(oldNickname);
-
-                console.log(
-                  `⏱️ Reverted nickname for ${freshMember.user.tag} back to normal.`
-                );
-              }
-            } catch (revertErr) {
-              console.log(
-                "Failed to revert nickname after timer:",
-                revertErr
-              );
-            }
-          }, 5 * 60 * 1000);
-
-        } else {
-          console.log("❌ Target member is not manageable.");
-        }
-      } catch (err) {
-        console.log("Failed to change nickname:", err);
-      }
-    }
-
-    const randomQuote =
-      TRICK_QUOTES[Math.floor(Math.random() * TRICK_QUOTES.length)];
-
-    const trickEmbed = new EmbedBuilder()
-      .setTitle(`💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`)
-      .setDescription(
-        `A dark door was opened and Dionysius targeted the Birthday Boy!\n\n` +
-        `💬 *"${randomQuote}"*\n\n` +
-        `🎂 **Victim:** ${
-          targetMember ? targetMember : "Birthday Boy ID not found!"
-        }\n` +
-        (
-          nickChanged 
-            ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}** for 5 minutes!` 
-            : `🎭 **Fate:** Dionysius laughs at your foolishness!`
+        .setTitle(
+          `🎉 FESTIVITY REVEALED: Door #${doorIndex + 1}`
         )
-      )
-      .setColor("#FF0000");
 
-    if (trickData.image) {
-      const imgName = path.basename(trickData.image);
+        .setDescription(
 
-      trickEmbed.setImage(`attachment://${imgName}`);
-      files.push(new AttachmentBuilder(trickData.image));
+          `The heavy marble door opens with a warm flash of light!\n\n` +
+
+          `**Game:** __${game.name}__\n\n` +
+
+          `📋 **Rules & Prompt:**\n${game.description}`
+
+        )
+
+        .setColor("#FFD700")
+
+        .setFooter({
+          text: "Let the festivities begin!"
+        });
+
+
+    // Game image
+    if (game.image) {
+
+      const imgName =
+        path.basename(game.image);
+
+      gameEmbed.setImage(
+        `attachment://${imgName}`
+      );
+
+      files.push(
+        new AttachmentBuilder(
+          game.image
+        )
+      );
+
     }
 
-    if (trickData.gif) {
-      const gifName = path.basename(trickData.gif);
 
-      const gifEmbed = new EmbedBuilder()
-        .setColor("#FF0000")
-        .setImage(`attachment://${gifName}`);
+    embeds.push(
+      gameEmbed
+    );
 
-      files.push(new AttachmentBuilder(trickData.gif));
-      embeds.push(gifEmbed);
+
+    // Game GIF
+    if (game.gif) {
+
+      const gifName =
+        path.basename(game.gif);
+
+
+      const gifEmbed =
+        new EmbedBuilder()
+
+          .setColor("#FFD700")
+
+          .setImage(
+            `attachment://${gifName}`
+          );
+
+
+      files.push(
+        new AttachmentBuilder(
+          game.gif
+        )
+      );
+
+
+      embeds.push(
+        gifEmbed
+      );
+
     }
-    
-    embeds.unshift(trickEmbed);
+
   }
 
-  selectedDoor.used = true;
 
-  session.components = session.components.map(row => {
-    const newRow = ActionRowBuilder.from(row);
+  // ===========================================================
+  // 💀 TRICK DOOR
+  // ===========================================================
+  else if (selectedDoor.type === 'TRICK') {
 
-    newRow.components.forEach(button => {
-      if (button.data.custom_id === `door_${doorIndex}`) {
-        button.setDisabled(true);
-        button.setLabel(`Opened (${doorIndex + 1})`);
+    const trickData =
+      selectedDoor.data;
 
-        button.setStyle(
-          selectedDoor.type === 'TRICK'
-            ? ButtonStyle.Danger
-            : ButtonStyle.Success
+
+    const targetNickname =
+      trickData.nickname;
+
+
+    const guild =
+      member.guild;
+
+
+    let targetMember =
+      null;
+
+
+    let nickChanged =
+      false;
+
+
+    let oldNickname =
+      null;
+
+
+    // ---------------------------------------------------------
+    // FIND BIRTHDAY BOY
+    // ---------------------------------------------------------
+    try {
+
+      targetMember =
+        await guild.members
+          .fetch(BIRTHDAY_BOY_ID)
+          .catch(() => null);
+
+    } catch (e) {
+
+      console.log(
+        "Could not fetch user by ID:",
+        e
+      );
+
+    }
+
+
+    // ---------------------------------------------------------
+    // CHANGE NICKNAME
+    // ---------------------------------------------------------
+    if (targetMember) {
+
+      try {
+
+        if (targetMember.manageable) {
+
+          oldNickname =
+            targetMember.nickname;
+
+
+          await targetMember.setNickname(
+            targetNickname
+          );
+
+
+          nickChanged =
+            true;
+
+
+          // Revert after 5 minutes
+          setTimeout(
+            async () => {
+
+              try {
+
+                const freshMember =
+                  await guild.members
+                    .fetch(BIRTHDAY_BOY_ID)
+                    .catch(() => null);
+
+
+                if (
+                  freshMember &&
+                  freshMember.manageable
+                ) {
+
+                  await freshMember.setNickname(
+                    oldNickname
+                  );
+
+
+                  console.log(
+                    `⏱️ Reverted nickname for ${freshMember.user.tag}.`
+                  );
+
+                }
+
+              } catch (revertErr) {
+
+                console.log(
+                  "Failed to revert nickname:",
+                  revertErr
+                );
+
+              }
+
+            },
+            5 * 60 * 1000
+          );
+
+        } else {
+
+          console.log(
+            "❌ Target member is not manageable."
+          );
+
+        }
+
+      } catch (err) {
+
+        console.log(
+          "Failed to change nickname:",
+          err
         );
-      }
-    });
 
-    return newRow;
-  });
+      }
+
+    }
+
+
+    // ---------------------------------------------------------
+    // RANDOM QUOTE
+    // ---------------------------------------------------------
+    const randomQuote =
+      TRICK_QUOTES[
+        Math.floor(
+          Math.random() *
+          TRICK_QUOTES.length
+        )
+      ];
+
+
+    // ---------------------------------------------------------
+    // TRICK EMBED
+    // ---------------------------------------------------------
+    const trickEmbed =
+      new EmbedBuilder()
+
+        .setTitle(
+          `💀 YOU'VE BEEN TRICKED! HAHAHA! (Door #${doorIndex + 1})`
+        )
+
+        .setDescription(
+
+          `A dark door was opened and Dionysius targeted the Birthday Boy!\n\n` +
+
+          `💬 *"${randomQuote}"*\n\n` +
+
+          `🎂 **Victim:** ${
+            targetMember
+              ? targetMember
+              : "Birthday Boy ID not found!"
+          }\n\n` +
+
+          (
+
+            nickChanged
+
+              ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}** for 5 minutes!`
+
+              : `🎭 **Fate:** Dionysius laughs at your foolishness!`
+
+          )
+
+        )
+
+        .setColor("#FF0000");
+
+
+    // Trick image
+    if (trickData.image) {
+
+      const imgName =
+        path.basename(
+          trickData.image
+        );
+
+
+      trickEmbed.setImage(
+        `attachment://${imgName}`
+      );
+
+
+      files.push(
+        new AttachmentBuilder(
+          trickData.image
+        )
+      );
+
+    }
+
+
+    // Trick GIF
+    if (trickData.gif) {
+
+      const gifName =
+        path.basename(
+          trickData.gif
+        );
+
+
+      const gifEmbed =
+        new EmbedBuilder()
+
+          .setColor("#FF0000")
+
+          .setImage(
+            `attachment://${gifName}`
+          );
+
+
+      files.push(
+        new AttachmentBuilder(
+          trickData.gif
+        )
+      );
+
+
+      embeds.push(
+        gifEmbed
+      );
+
+    }
+
+
+    embeds.unshift(
+      trickEmbed
+    );
+
+  }
+
+
+  // -----------------------------------------------------------
+  // MARK DOOR AS USED
+  // -----------------------------------------------------------
+  selectedDoor.used =
+    true;
+
+
+  // -----------------------------------------------------------
+  // DISABLE THAT BUTTON
+  // -----------------------------------------------------------
+  session.components =
+    session.components.map(
+      row => {
+
+        const newRow =
+          ActionRowBuilder.from(
+            row
+          );
+
+
+        newRow.components.forEach(
+          button => {
+
+            if (
+              button.data.custom_id ===
+              `door_${doorIndex}`
+            ) {
+
+              button.setDisabled(
+                true
+              );
+
+
+              button.setLabel(
+                `Opened (${doorIndex + 1})`
+              );
+
+
+              button.setStyle(
+
+                selectedDoor.type === 'TRICK'
+
+                  ? ButtonStyle.Danger
+
+                  : ButtonStyle.Success
+
+              );
+
+            }
+
+          }
+        );
+
+
+        return newRow;
+
+      }
+    );
+
 
   return {
+
     success: true,
+
     embeds,
+
     files
+
   };
+
 }
+
 
 // -------------------------------------------------------------
 // 4. BOT READY EVENT
 // -------------------------------------------------------------
-client.once('ready', async () => {
-  console.log(`🍷 Dionysius has awakened as ${client.user.tag}!`);
-
-  try {
-    const commands = [
-      {
-        name: 'domain',
-        description: 'Summon the Domain of Dionysius and the 12 Doors!'
-      },
-      {
-        name: 'doors',
-        description: 'Summon the Domain of Dionysius and the 12 Doors!'
-      },
-      {
-        name: 'leave',
-        description: 'Make Dionysius retreat and stop auto-dropping entirely.'
-      }
-    ];
-
-    await client.application.commands.set(commands);
+client.once(
+  'ready',
+  async () => {
 
     console.log(
-      "✅ Registered /domain, /doors, and /leave Slash Commands!"
+      `🍷 Dionysius has awakened as ${client.user.tag}!`
     );
-  } catch (err) {
-    console.error("Failed to register slash commands:", err);
+
+
+    try {
+
+      const commands = [
+
+        {
+          name: 'domain',
+          description:
+            'Summon Dionysius and prepare the 12 Doors!'
+        },
+
+        {
+          name: 'doors',
+          description:
+            'Immediately open the 12 Doors!'
+        },
+
+        {
+          name: 'leave',
+          description:
+            'Make Dionysius retreat and seal the doors.'
+        }
+
+      ];
+
+
+      await client.application.commands.set(
+        commands
+      );
+
+
+      console.log(
+        "✅ Registered /domain, /doors, and /leave!"
+      );
+
+    } catch (err) {
+
+      console.error(
+        "Failed to register slash commands:",
+        err
+      );
+
+    }
+
   }
-});
+);
+
 
 // -------------------------------------------------------------
 // 5. CHAT INPUT LISTENER
-// Auto-Drop Every 29 Messages + Open Doors Command + Door Numbers
 // -------------------------------------------------------------
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
+// Handles:
+//
+// OPEN THE DOORS DIONYSIUS
+//
+// and:
+//
+// 1
+// 2
+// 3
+// ...
+// 12
+//
+// There is NO automatic message counter anymore.
+// -------------------------------------------------------------
+client.on(
+  'messageCreate',
+  async (message) => {
 
-  const trimmed = message.content.trim();
-  const normalizedMessage = trimmed.toLowerCase();
-
-  // -----------------------------------------------------------
-  // 🚪 OPEN THE DOORS COMMAND
-  // Only an authorized host can reveal the hallway.
-  // -----------------------------------------------------------
-  if (
-    normalizedMessage === "open the doors dionysius" &&
-    waitingForDoors.has(message.channelId)
-  ) {
-    if (!isAuthorized(message.member, message.author)) {
-      return message.reply({
-        content: `⛔ Only authorized hosts can command Dionysius!`
-      }).catch(() => {});
+    if (message.author.bot) {
+      return;
     }
 
-    waitingForDoors.delete(message.channelId);
 
-    try {
-      await openHallway(message.channel);
+    const trimmed =
+      message.content.trim();
 
-    } catch (err) {
-      console.error("❌ Failed to open the doors:", err);
 
-      // Put the channel back into waiting mode so the host
-      // can simply try the command again.
-      waitingForDoors.add(message.channelId);
+    // ---------------------------------------------------------
+    // 🚪 EXACT COMMAND
+    //
+    // User should type:
+    //
+    // OPEN THE DOORS DIONYSIUS
+    //
+    // ---------------------------------------------------------
+    if (
+      trimmed ===
+      "OPEN THE DOORS DIONYSIUS"
+      &&
+      waitingForDoors.has(
+        message.channelId
+      )
+    ) {
 
-      await message.channel.send({
-        content:
-          `⚠️ Dionysius tripped over the doors. 😭\n` +
-          `Try saying **"Open the doors Dionysius"** again.`
-      }).catch(() => {});
-    }
 
-    return;
-  }
+      // Only authorized host
+      if (
+        !isAuthorized(
+          message.member,
+          message.author
+        )
+      ) {
 
-  // -----------------------------------------------------------
-  // 🔄 AUTO-DROP COUNTER LOGIC
-  // Triggers every 29 messages ONLY if a hallway is active.
-  // -----------------------------------------------------------
-  if (autoDropActive && activeChannels.has(message.channelId)) {
-    let count = messageCounters.get(message.channelId) || 0;
-    count++;
+        return message.reply({
 
-    if (count >= 29) {
-      messageCounters.set(message.channelId, 0);
-
-      try {
-        const payload = createHallwayPayload();
-
-        const dropMessage = await message.channel.send({
-          embeds: [payload.embed],
-          components: payload.components,
-          files: payload.files
-        });
-
-        activeChannels.set(message.channelId, {
-          messageId: dropMessage.id,
-          doors: payload.doors,
-          components: payload.components,
-          embed: payload.embed,
-          files: payload.files
-        });
-
-        await message.channel.send({
           content:
-            `🍷 *The Domain of Dionysius has mysteriously dropped after 29 messages!*`
+            `⛔ Only authorized hosts can command Dionysius!`
+
         }).catch(() => {});
 
-      } catch (err) {
-        console.error("Failed to auto-drop hallway:", err);
       }
-    } else {
-      messageCounters.set(message.channelId, count);
-    }
-  }
 
-  // -----------------------------------------------------------
-  // --- STANDARD DOOR OPENING VIA CHAT NUMBER (1-12)
-  // -----------------------------------------------------------
-  const doorNum = parseInt(trimmed);
-  
-  if (isNaN(doorNum) || doorNum < 1 || doorNum > 12) return;
 
-  if (!isAuthorized(message.member, message.author)) {
-    return message.reply({
-      content: `⛔ Only authorized hosts can unseal doors!`
-    }).catch(() => {});
-  }
-
-  let session = activeChannels.get(message.channelId);
-
-  if (!session) {
-    return message.reply({
-      content:
-        `⚠️ No active hallway in this channel! ` +
-        `Summon Dionysius first using /domain or /doors.`
-    }).catch(() => {});
-  }
-
-  const doorIndex = doorNum - 1;
-  const selectedDoor = session.doors[doorIndex];
-
-  if (selectedDoor.used) {
-    return message.reply({
-      content:
-        `🚪 Door #${doorNum} has already been unsealed! Choose another.`
-    }).catch(() => {});
-  }
-
-  try {
-    const result = await processDoorUnlock(
-      session,
-      doorIndex,
-      message.member,
-      message.author
-    );
-
-    if (!result.success) {
-      return message.reply({
-        content: `⚠️ Could not open this door.`
-      }).catch(() => {});
-    }
-
-    try {
-      const hallwayMsg = await message.channel.messages.fetch(
-        session.messageId
+      // Remove waiting status
+      waitingForDoors.delete(
+        message.channelId
       );
 
-      await hallwayMsg.edit({
-        components: session.components
+
+      try {
+
+        await openHallway(
+          message.channel
+        );
+
+
+      } catch (err) {
+
+        console.error(
+          "❌ Failed to open the doors:",
+          err
+        );
+
+
+        // Allow retry
+        waitingForDoors.add(
+          message.channelId
+        );
+
+
+        await message.channel.send({
+
+          content:
+            `⚠️ Dionysius tripped over the doors. 😭\n` +
+            `Try **OPEN THE DOORS DIONYSIUS** again.`
+
+        }).catch(() => {});
+
+      }
+
+
+      return;
+
+    }
+
+
+    // ---------------------------------------------------------
+    // 🔢 OPEN DOOR BY NUMBER
+    // ---------------------------------------------------------
+    const doorNum =
+      parseInt(trimmed);
+
+
+    if (
+      isNaN(doorNum) ||
+      doorNum < 1 ||
+      doorNum > 12
+    ) {
+
+      return;
+
+    }
+
+
+    // ---------------------------------------------------------
+    // AUTHORIZATION
+    // ---------------------------------------------------------
+    if (
+      !isAuthorized(
+        message.member,
+        message.author
+      )
+    ) {
+
+      return message.reply({
+
+        content:
+          `⛔ Only authorized hosts can unseal doors!`
+
+      }).catch(() => {});
+
+    }
+
+
+    // ---------------------------------------------------------
+    // GET ACTIVE HALLWAY
+    // ---------------------------------------------------------
+    const session =
+      activeChannels.get(
+        message.channelId
+      );
+
+
+    if (!session) {
+
+      return message.reply({
+
+        content:
+          `⚠️ No active hallway in this channel!\n` +
+          `Use **/domain** or **/doors** first.`
+
+      }).catch(() => {});
+
+    }
+
+
+    const doorIndex =
+      doorNum - 1;
+
+
+    const selectedDoor =
+      session.doors[doorIndex];
+
+
+    // ---------------------------------------------------------
+    // ALREADY OPEN
+    // ---------------------------------------------------------
+    if (selectedDoor.used) {
+
+      return message.reply({
+
+        content:
+          `🚪 Door #${doorNum} has already been unsealed! Choose another.`
+
+      }).catch(() => {});
+
+    }
+
+
+    // ---------------------------------------------------------
+    // PROCESS DOOR
+    // ---------------------------------------------------------
+    try {
+
+      const result =
+        await processDoorUnlock(
+          session,
+          doorIndex,
+          message.member,
+          message.author
+        );
+
+
+      if (!result.success) {
+
+        return message.reply({
+
+          content:
+            `⚠️ Could not open this door.`
+
+        }).catch(() => {});
+
+      }
+
+
+      // -------------------------------------------------------
+      // UPDATE HALLWAY BUTTONS
+      // -------------------------------------------------------
+      try {
+
+        const hallwayMsg =
+          await message.channel.messages.fetch(
+            session.messageId
+          );
+
+
+        await hallwayMsg.edit({
+
+          components:
+            session.components
+
+        });
+
+      } catch (e) {
+
+        console.log(
+          "Could not update hallway buttons:",
+          e
+        );
+
+      }
+
+
+      // -------------------------------------------------------
+      // SEND RESULT
+      // -------------------------------------------------------
+      await message.channel.send({
+
+        embeds:
+          result.embeds,
+
+        files:
+          result.files
+
       });
 
-    } catch (e) {
-      console.log(
-        "Could not update hallway message buttons via chat:",
-        e
+
+    } catch (err) {
+
+      console.error(
+        `❌ Error opening Door #${doorNum}:`,
+        err
       );
+
+
+      return message.reply({
+
+        content:
+          `⚠️ Render failed while opening Door #${doorNum}. Please try again!`
+
+      }).catch(() => {});
+
     }
 
-    await message.channel.send({
-      embeds: result.embeds,
-      files: result.files
-    });
-
-  } catch (err) {
-    console.error(
-      `❌ Error opening Door #${doorNum} via chat:`,
-      err
-    );
-
-    return message.reply({
-      content:
-        `⚠️ Render failed while opening Door #${doorNum}. ` +
-        `Please try again!`
-    }).catch(() => {});
   }
-});
+);
+
 
 // -------------------------------------------------------------
 // 6. INTERACTION LISTENER
 // Slash Commands & Buttons
 // -------------------------------------------------------------
-client.on('interactionCreate', async (interaction) => {
+client.on(
+  'interactionCreate',
+  async (interaction) => {
 
-  // -----------------------------------------------------------
-  // SLASH COMMANDS
-  // -----------------------------------------------------------
-  if (interaction.isChatInputCommand()) {
 
-    // ---------------------------------------------------------
-    // /DOMAIN OR /DOORS
-    // ---------------------------------------------------------
+    // =========================================================
+    // SLASH COMMANDS
+    // =========================================================
     if (
-      interaction.commandName === 'domain' ||
-      interaction.commandName === 'doors'
+      interaction.isChatInputCommand()
     ) {
 
-      if (!isAuthorized(interaction.member, interaction.user)) {
-        return interaction.reply({ 
-          content: `⛔ You do not have permission to control Dionysius!`, 
-          ephemeral: true 
-        });
+
+      // =======================================================
+      // 🍷 /DOMAIN
+      //
+      // DOES:
+      //
+      // 1. Tags OLYMPIAN
+      // 2. Announces Dionysius
+      // 3. WAITS for:
+      //
+      // OPEN THE DOORS DIONYSIUS
+      //
+      // =======================================================
+      if (
+        interaction.commandName ===
+        'domain'
+      ) {
+
+
+        // -----------------------------------------------------
+        // AUTHORIZATION
+        // -----------------------------------------------------
+        if (
+          !isAuthorized(
+            interaction.member,
+            interaction.user
+          )
+        ) {
+
+          return interaction.reply({
+
+            content:
+              `⛔ You do not have permission to control Dionysius!`,
+
+            ephemeral: true
+
+          });
+
+        }
+
+
+        // -----------------------------------------------------
+        // CLEAR OLD HALLWAY
+        // -----------------------------------------------------
+        activeChannels.delete(
+          interaction.channelId
+        );
+
+
+        // -----------------------------------------------------
+        // SET WAITING MODE
+        // -----------------------------------------------------
+        waitingForDoors.add(
+          interaction.channelId
+        );
+
+
+        // -----------------------------------------------------
+        // CREATE ARRIVAL MESSAGE
+        // -----------------------------------------------------
+        const arrivalMessage =
+          createDionysiusArrivalMessage(
+            interaction.guild
+          );
+
+
+        // -----------------------------------------------------
+        // SEND ARRIVAL
+        // -----------------------------------------------------
+        await interaction.reply(
+          arrivalMessage
+        );
+
+
+        console.log(
+          `🍷 Dionysius arrived in ${interaction.channelId}.`
+        );
+
+
+        return;
+
       }
 
-      autoDropActive = true;
 
-      // Clear any existing hallway in this channel.
-      activeChannels.delete(interaction.channelId);
-      messageCounters.delete(interaction.channelId);
+      // =======================================================
+      // 🚪 /DOORS
+      //
+      // IMMEDIATELY OPENS THE DOORS
+      //
+      // NO ARRIVAL MESSAGE
+      // NO WAITING
+      // =======================================================
+      if (
+        interaction.commandName ===
+        'doors'
+      ) {
 
-      // -------------------------------------------------------
-      // 🍷 DIONYSIUS ARRIVES
-      // BUT THE DOORS DO NOT APPEAR YET.
-      // -------------------------------------------------------
-      waitingForDoors.add(interaction.channelId);
 
-      const arrivalMessage = createDionysiusArrivalMessage();
+        // -----------------------------------------------------
+        // AUTHORIZATION
+        // -----------------------------------------------------
+        if (
+          !isAuthorized(
+            interaction.member,
+            interaction.user
+          )
+        ) {
 
-      await interaction.reply(arrivalMessage);
+          return interaction.reply({
 
-      console.log(
-        `🍷 Dionysius has arrived in ${interaction.channelId}. ` +
-        `Waiting for "Open the doors Dionysius".`
-      );
-    }
+            content:
+              `⛔ You do not have permission to control Dionysius!`,
 
-    // ---------------------------------------------------------
-    // /LEAVE
-    // ---------------------------------------------------------
-    else if (interaction.commandName === 'leave') {
+            ephemeral: true
 
-      if (!isAuthorized(interaction.member, interaction.user)) {
-        return interaction.reply({ 
-          content: `⛔ You do not have permission to control Dionysius!`, 
-          ephemeral: true 
-        });
+          });
+
+        }
+
+
+        // -----------------------------------------------------
+        // REMOVE WAITING STATUS
+        // -----------------------------------------------------
+        waitingForDoors.delete(
+          interaction.channelId
+        );
+
+
+        // -----------------------------------------------------
+        // CLEAR OLD HALLWAY
+        // -----------------------------------------------------
+        activeChannels.delete(
+          interaction.channelId
+        );
+
+
+        // -----------------------------------------------------
+        // ACKNOWLEDGE COMMAND
+        // -----------------------------------------------------
+        await interaction.deferReply();
+
+
+        try {
+
+          // Open the hallway
+          await openHallway(
+            interaction.channel
+          );
+
+
+          // Remove slash command response
+          await interaction.deleteReply()
+            .catch(() => {});
+
+
+        } catch (err) {
+
+          console.error(
+            "❌ Failed to open hallway:",
+            err
+          );
+
+
+          return interaction.editReply({
+
+            content:
+              `⚠️ Dionysius couldn't open the doors. 😭`
+
+          });
+
+        }
+
+
+        return;
+
       }
 
-      autoDropActive = false;
 
-      activeChannels.clear();
-      messageCounters.clear();
-      waitingForDoors.clear();
+      // =======================================================
+      // 🍷 /LEAVE
+      // =======================================================
+      if (
+        interaction.commandName ===
+        'leave'
+      ) {
 
-      return interaction.reply({ 
-        content:
-          `🍷 **Dionysius has retreated!**\n\n` +
-          `The doors are sealed, the wine has been confiscated, ` +
-          `and auto-dropping has been completely stopped.`
-      });
+
+        // -----------------------------------------------------
+        // AUTHORIZATION
+        // -----------------------------------------------------
+        if (
+          !isAuthorized(
+            interaction.member,
+            interaction.user
+          )
+        ) {
+
+          return interaction.reply({
+
+            content:
+              `⛔ You do not have permission to control Dionysius!`,
+
+            ephemeral: true
+
+          });
+
+        }
+
+
+        // -----------------------------------------------------
+        // CLEAR EVERYTHING
+        // -----------------------------------------------------
+        activeChannels.clear();
+
+        waitingForDoors.clear();
+
+
+        return interaction.reply({
+
+          content:
+            `🍷 **Dionysius has retreated!**\n\n` +
+            `The doors are sealed, the wine has been confiscated, ` +
+            `and the party has been placed on divine lockdown. 😭🍷`
+
+        });
+
+      }
+
+
+      return;
+
     }
 
-    return;
-  }
 
-  // -----------------------------------------------------------
-  // BUTTON INTERACTIONS
-  // -----------------------------------------------------------
-  if (interaction.isButton()) {
+    // =========================================================
+    // 🚪 BUTTON INTERACTIONS
+    // =========================================================
+    if (
+      interaction.isButton()
+    ) {
 
-    if (!isAuthorized(interaction.member, interaction.user)) {
-      return interaction.reply({ 
-        content: `⛔ Only authorized hosts can unseal doors!`, 
-        ephemeral: true 
-      });
-    }
 
-    // ---------------------------------------------------------
-    // 🍷 LEAVE / STOP BUTTON
-    // ---------------------------------------------------------
-    if (interaction.customId === 'bot_leave') {
+      // -------------------------------------------------------
+      // AUTHORIZATION
+      // -------------------------------------------------------
+      if (
+        !isAuthorized(
+          interaction.member,
+          interaction.user
+        )
+      ) {
 
-      autoDropActive = false;
+        return interaction.reply({
 
-      activeChannels.clear();
-      messageCounters.clear();
-      waitingForDoors.clear();
+          content:
+            `⛔ Only authorized hosts can unseal doors!`,
 
-      return interaction.update({ 
-        content:
-          `🍷 **Dionysius has retreated! Auto-dropping has been completely stopped.**`,
-        embeds: [], 
-        components: [] 
-      });
-    }
-
-    await interaction.deferUpdate().catch(() => {});
-
-    let session = activeChannels.get(interaction.channelId);
-
-    if (!session) {
-      const payload = createHallwayPayload();
-
-      session = {
-        messageId: interaction.message.id,
-        doors: payload.doors,
-        components: payload.components,
-        embed: payload.embed,
-        files: payload.files
-      };
-
-      activeChannels.set(interaction.channelId, session);
-    }
-
-    const doorIndex = parseInt(
-      interaction.customId.split('_')[1]
-    );
-
-    const selectedDoor = session.doors[doorIndex];
-
-    if (selectedDoor.used) {
-      return interaction.followUp({ 
-        content:
-          "🚪 This door has already been unsealed! Choose another.",
-        ephemeral: true 
-      });
-    }
-
-    try {
-      const result = await processDoorUnlock(
-        session,
-        doorIndex,
-        interaction.member,
-        interaction.user
-      );
-
-      if (!result.success) {
-        return interaction.followUp({
-          content: "⚠️ Could not open this door.",
           ephemeral: true
+
         });
+
       }
 
-      await interaction.message.edit({
-        components: session.components
-      });
 
-      await interaction.followUp({
-        embeds: result.embeds,
-        files: result.files
-      });
+      // =======================================================
+      // 🍷 LEAVE / STOP BUTTON
+      // =======================================================
+      if (
+        interaction.customId ===
+        'bot_leave'
+      ) {
 
-    } catch (err) {
-      console.error(
-        `❌ Error opening Door #${doorIndex + 1}:`,
-        err
-      );
 
-      return interaction.followUp({ 
-        content:
-          `⚠️ Render lagged while opening Door #${doorIndex + 1}. ` +
-          `The door remains unlocked—please click it again!`,
-        ephemeral: true 
-      });
+        // Clear active hallway
+        activeChannels.delete(
+          interaction.channelId
+        );
+
+
+        // Clear waiting status
+        waitingForDoors.delete(
+          interaction.channelId
+        );
+
+
+        return interaction.update({
+
+          content:
+            `🍷 **Dionysius has retreated!**\n\n` +
+            `The doors are sealed. The chaos is temporarily contained. 😈`,
+
+          embeds: [],
+
+          components: []
+
+        });
+
+      }
+
+
+      // -------------------------------------------------------
+      // DEFER BUTTON UPDATE
+      // -------------------------------------------------------
+      await interaction
+        .deferUpdate()
+        .catch(() => {});
+
+
+      // -------------------------------------------------------
+      // FIND ACTIVE SESSION
+      // -------------------------------------------------------
+      const session =
+        activeChannels.get(
+          interaction.channelId
+        );
+
+
+      if (!session) {
+
+        return interaction.followUp({
+
+          content:
+            `⚠️ There is no active hallway right now.`,
+
+          ephemeral: true
+
+        });
+
+      }
+
+
+      // -------------------------------------------------------
+      // GET DOOR NUMBER
+      // -------------------------------------------------------
+      const doorIndex =
+        parseInt(
+          interaction.customId
+            .split('_')[1]
+        );
+
+
+      // -------------------------------------------------------
+      // SAFETY CHECK
+      // -------------------------------------------------------
+      if (
+        isNaN(doorIndex) ||
+        doorIndex < 0 ||
+        doorIndex > 11
+      ) {
+
+        return interaction.followUp({
+
+          content:
+            `⚠️ Invalid door.`,
+
+          ephemeral: true
+
+        });
+
+      }
+
+
+      const selectedDoor =
+        session.doors[doorIndex];
+
+
+      // -------------------------------------------------------
+      // ALREADY OPEN
+      // -------------------------------------------------------
+      if (
+        selectedDoor.used
+      ) {
+
+        return interaction.followUp({
+
+          content:
+            `🚪 This door has already been unsealed! Choose another.`,
+
+          ephemeral: true
+
+        });
+
+      }
+
+
+      // -------------------------------------------------------
+      // PROCESS DOOR
+      // -------------------------------------------------------
+      try {
+
+        const result =
+          await processDoorUnlock(
+            session,
+            doorIndex,
+            interaction.member,
+            interaction.user
+          );
+
+
+        if (!result.success) {
+
+          return interaction.followUp({
+
+            content:
+              `⚠️ Could not open this door.`,
+
+            ephemeral: true
+
+          });
+
+        }
+
+
+        // -----------------------------------------------------
+        // UPDATE BUTTONS
+        // -----------------------------------------------------
+        await interaction.message.edit({
+
+          components:
+            session.components
+
+        });
+
+
+        // -----------------------------------------------------
+        // SHOW RESULT
+        // -----------------------------------------------------
+        await interaction.followUp({
+
+          embeds:
+            result.embeds,
+
+          files:
+            result.files
+
+        });
+
+
+      } catch (err) {
+
+        console.error(
+          `❌ Error opening Door #${doorIndex + 1}:`,
+          err
+        );
+
+
+        return interaction.followUp({
+
+          content:
+            `⚠️ Render lagged while opening Door #${doorIndex + 1}. ` +
+            `The door remains available — try again!`,
+
+          ephemeral: true
+
+        });
+
+      }
+
     }
+
   }
-});
+);
+
 
 // -------------------------------------------------------------
 // 7. LOGIN
 // -------------------------------------------------------------
-client.login(BOT_TOKEN);
+client.login(
+  BOT_TOKEN
+);
