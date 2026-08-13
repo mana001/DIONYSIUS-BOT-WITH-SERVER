@@ -349,11 +349,11 @@ function createDionysiusArrivalMessage(guild) {
       `🎉 **6 games**\n` +
       `💀 **6 things I refuse to explain**\n\n` +
 
-      `The wine is flowing. The birthday boy is in danger. 🍇🔥\n\n` +
+      `Now light it up. It’s my birthday, behave accordingly. 🕺🍇\n\n` +
 
-      `**Now someone say it...** 👀\n\n` +
+      `👀\n\n` +
 
-      `🚪 **OPEN THE DOORS DIONYSIUS** 🚪`
+      `🚪 **LET.THE.GAME.STARTS** 🚪`
     )
 
     .setColor("#800020")
@@ -1222,22 +1222,31 @@ client.on(
       message.content.trim();
 
 
-    // ---------------------------------------------------------
-    // 🚪 EXACT COMMAND
-    //
-    // User should type:
-    //
-    // OPEN THE DOORS DIONYSIUS
-    //
-    // ---------------------------------------------------------
-    if (
-      trimmed ===
-      "OPEN THE DOORS DIONYSIUS"
-      &&
-      waitingForDoors.has(
-        message.channelId
-      )
-    ) {
+// ---------------------------------------------------------
+// 🚪 FLEXIBLE DOOR COMMAND
+//
+// Accepted examples:
+// OPEN THE DOORS DIONYSIUS
+// open the doors dionysius
+// OPEN THE DOORS DIONYSIUS 🚪
+// OPEN THE DOORS DIONYSIUS 🍷
+// OPEN THE DOORS DIONYSIUS!!!
+// Open the doors Dionysius 🚪🍷
+// ---------------------------------------------------------
+
+const doorCommand = trimmed
+  .toLowerCase()
+  .replace(/[^\p{L}\p{N}\s]/gu, "")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const isDoorCommand =
+  doorCommand === "open the doors dionysius";
+
+if (
+  isDoorCommand &&
+  waitingForDoors.has(message.channelId)
+) {
 
 
       // Only authorized host
