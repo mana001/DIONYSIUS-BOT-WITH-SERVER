@@ -54,14 +54,12 @@ const client = new Client({
   ]
 });
 
+
 // -------------------------------------------------------------
 // 🔐 BOT TOKEN
 // -------------------------------------------------------------
-// Keep the real token inside Render Environment Variables:
-// DISCORD_TOKEN = your actual bot token
-//
-// DO NOT paste your real token into this file.
-const BOT_TOKEN = process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
+const BOT_TOKEN =
+  process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
 
 
 // -------------------------------------------------------------
@@ -72,11 +70,10 @@ const BIRTHDAY_BOY_ID = "726748866023784490";
 const REQUIRED_ROLE_NAME = "HOST B";
 
 // 🏛️ ROLE NAME TO TAG
-// Your actual Discord role is named "OLYMPIAN"
-// so you do NOT need to find/copy the role ID.
 const OLYMPIANS_ROLE_NAME = "OLYMPIAN";
 
 function isAuthorized(member, user) {
+
   // Owner always has permission
   if (user && user.id === OWNER_ID) {
     return true;
@@ -306,8 +303,7 @@ const GAMES_LIST = [
 const activeChannels = new Map();
 
 // Channels where /domain has been used
-// and Dionysius is waiting for:
-// OPEN THE DOORS DIONYSIUS
+// and Dionysius is waiting for the door phrase
 const waitingForDoors = new Set();
 
 
@@ -360,18 +356,24 @@ function createDionysiusArrivalMessage(guild) {
       text: "Dionysius is watching..."
     });
 
-
   return {
+
     content,
-    embeds: [embed],
+
+    embeds: [
+      embed
+    ],
 
     allowedMentions: olympianRole
       ? {
-          roles: [olympianRole.id]
+          roles: [
+            olympianRole.id
+          ]
         }
       : {
           parse: []
         }
+
   };
 }
 
@@ -583,6 +585,7 @@ function createHallwayPayload() {
       row3.addComponents(button);
 
     }
+
   }
 
 
@@ -723,7 +726,9 @@ async function processDoorUnlock(
   // ===========================================================
   // 🎉 GAME DOOR
   // ===========================================================
-  if (selectedDoor.type === 'GAME') {
+  if (
+    selectedDoor.type === 'GAME'
+  ) {
 
     const game =
       selectedDoor.data;
@@ -753,15 +758,21 @@ async function processDoorUnlock(
         });
 
 
-    // Game image
+    // ---------------------------------------------------------
+    // GAME IMAGE
+    // ---------------------------------------------------------
     if (game.image) {
 
       const imgName =
-        path.basename(game.image);
+        path.basename(
+          game.image
+        );
+
 
       gameEmbed.setImage(
         `attachment://${imgName}`
       );
+
 
       files.push(
         new AttachmentBuilder(
@@ -777,11 +788,15 @@ async function processDoorUnlock(
     );
 
 
-    // Game GIF
+    // ---------------------------------------------------------
+    // GAME GIF
+    // ---------------------------------------------------------
     if (game.gif) {
 
       const gifName =
-        path.basename(game.gif);
+        path.basename(
+          game.gif
+        );
 
 
       const gifEmbed =
@@ -813,12 +828,17 @@ async function processDoorUnlock(
   // ===========================================================
   // 💀 TRICK DOOR
   // ===========================================================
-  else if (selectedDoor.type === 'TRICK') {
+  else if (
+    selectedDoor.type === 'TRICK'
+  ) {
 
     const trickData =
       selectedDoor.data;
 
 
+    // ---------------------------------------------------------
+    // NICKNAME FROM THE TRICK DATA
+    // ---------------------------------------------------------
     const targetNickname =
       trickData.nickname;
 
@@ -846,8 +866,12 @@ async function processDoorUnlock(
 
       targetMember =
         await guild.members
-          .fetch(BIRTHDAY_BOY_ID)
-          .catch(() => null);
+          .fetch(
+            BIRTHDAY_BOY_ID
+          )
+          .catch(
+            () => null
+          );
 
     } catch (e) {
 
@@ -860,7 +884,7 @@ async function processDoorUnlock(
 
 
     // ---------------------------------------------------------
-    // CHANGE NICKNAME
+    // CHANGE BIRTHDAY BOY NICKNAME
     // ---------------------------------------------------------
     if (targetMember) {
 
@@ -881,7 +905,9 @@ async function processDoorUnlock(
             true;
 
 
-          // Revert after 5 minutes
+          // ---------------------------------------------------
+          // REVERT AFTER 5 MINUTES
+          // ---------------------------------------------------
           setTimeout(
             async () => {
 
@@ -889,8 +915,12 @@ async function processDoorUnlock(
 
                 const freshMember =
                   await guild.members
-                    .fetch(BIRTHDAY_BOY_ID)
-                    .catch(() => null);
+                    .fetch(
+                      BIRTHDAY_BOY_ID
+                    )
+                    .catch(
+                      () => null
+                    );
 
 
                 if (
@@ -955,6 +985,13 @@ async function processDoorUnlock(
 
 
     // ---------------------------------------------------------
+    // 🎂 BIRTHDAY BOY MENTION
+    // ---------------------------------------------------------
+    const birthdayBoyMention =
+      `<@${BIRTHDAY_BOY_ID}>`;
+
+
+    // ---------------------------------------------------------
     // TRICK EMBED
     // ---------------------------------------------------------
     const trickEmbed =
@@ -972,7 +1009,7 @@ async function processDoorUnlock(
 
           `🎂 **Victim:** ${
             targetMember
-              ? targetMember
+              ? birthdayBoyMention
               : "Birthday Boy ID not found!"
           }\n\n` +
 
@@ -980,7 +1017,7 @@ async function processDoorUnlock(
 
             nickChanged
 
-              ? `🎭 **New Identity:** ${targetMember} is now known as **${targetNickname}** for 5 minutes!`
+              ? `🎭 **New Identity:** ${birthdayBoyMention} is now known as **${targetNickname}** for 5 minutes!`
 
               : `🎭 **Fate:** Dionysius laughs at your foolishness!`
 
@@ -991,7 +1028,16 @@ async function processDoorUnlock(
         .setColor("#FF0000");
 
 
-    // Trick image
+    // ---------------------------------------------------------
+    // ALLOW DISCORD TO MENTION BIRTHDAY BOY
+    // ---------------------------------------------------------
+    // This is important because the embed contains <@ID>.
+    // ---------------------------------------------------------
+
+
+    // ---------------------------------------------------------
+    // TRICK IMAGE
+    // ---------------------------------------------------------
     if (trickData.image) {
 
       const imgName =
@@ -1014,7 +1060,9 @@ async function processDoorUnlock(
     }
 
 
-    // Trick GIF
+    // ---------------------------------------------------------
+    // TRICK GIF
+    // ---------------------------------------------------------
     if (trickData.gif) {
 
       const gifName =
@@ -1145,18 +1193,21 @@ client.once(
 
         {
           name: 'domain',
+
           description:
             'Summon Dionysius and prepare the 12 Doors!'
         },
 
         {
           name: 'doors',
+
           description:
             'Immediately open the 12 Doors!'
         },
 
         {
           name: 'leave',
+
           description:
             'Make Dionysius retreat and seal the doors.'
         }
@@ -1189,11 +1240,17 @@ client.once(
 // -------------------------------------------------------------
 // 5. CHAT INPUT LISTENER
 // -------------------------------------------------------------
+//
 // Handles:
 //
 // OPEN THE DOORS DIONYSIUS
+// open the doors dionysius
+// OPEN THE DOORS DIONYSIUS 🚪
+// OPEN THE DOORS DIONYSIUS 🍷
+// OPEN THE DOORS DIONYSIUS!!!
+// Open the doors Dionysius 🚪🍷
 //
-// and:
+// AND:
 //
 // 1
 // 2
@@ -1201,12 +1258,15 @@ client.once(
 // ...
 // 12
 //
-// There is NO automatic message counter anymore.
+// Only authorized hosts can use these.
 // -------------------------------------------------------------
 client.on(
   'messageCreate',
   async (message) => {
 
+    // ---------------------------------------------------------
+    // IGNORE BOT MESSAGES
+    // ---------------------------------------------------------
     if (message.author.bot) {
       return;
     }
@@ -1216,34 +1276,52 @@ client.on(
       message.content.trim();
 
 
-// ---------------------------------------------------------
-// 🚪 FLEXIBLE DOOR COMMAND
-//
-// Accepted examples:
-// OPEN THE DOORS DIONYSIUS
-// open the doors dionysius
-// OPEN THE DOORS DIONYSIUS 🚪
-// OPEN THE DOORS DIONYSIUS 🍷
-// OPEN THE DOORS DIONYSIUS!!!
-// Open the doors Dionysius 🚪🍷
-// ---------------------------------------------------------
+    // =========================================================
+    // 🚪 FLEXIBLE DOOR COMMAND
+    // =========================================================
+    //
+    // Converts:
+    //
+    // OPEN THE DOORS DIONYSIUS 🚪🍷!!!
+    //
+    // into:
+    //
+    // open the doors dionysius
+    //
+    // =========================================================
 
-const doorCommand = trimmed
-  .toLowerCase()
-  .replace(/[^\p{L}\p{N}\s]/gu, "")
-  .replace(/\s+/g, " ")
-  .trim();
+    const doorCommand =
+      trimmed
+        .toLowerCase()
+        .replace(
+          /[^\p{L}\p{N}\s]/gu,
+          ""
+        )
+        .replace(
+          /\s+/g,
+          " "
+        )
+        .trim();
 
-const isDoorCommand =
-  doorCommand === "open the doors dionysius";
 
-if (
-  isDoorCommand &&
-  waitingForDoors.has(message.channelId)
-) {
+    const isDoorCommand =
+      doorCommand ===
+      "open the doors dionysius";
 
 
-      // Only authorized host
+    // =========================================================
+    // OPEN THE DOORS
+    // =========================================================
+    if (
+      isDoorCommand &&
+      waitingForDoors.has(
+        message.channelId
+      )
+    ) {
+
+      // -------------------------------------------------------
+      // AUTHORIZATION
+      // -------------------------------------------------------
       if (
         !isAuthorized(
           message.member,
@@ -1256,12 +1334,16 @@ if (
           content:
             `⛔ Only authorized hosts can command Dionysius!`
 
-        }).catch(() => {});
+        }).catch(
+          () => {}
+        );
 
       }
 
 
-      // Remove waiting status
+      // -------------------------------------------------------
+      // REMOVE WAITING STATUS
+      // -------------------------------------------------------
       waitingForDoors.delete(
         message.channelId
       );
@@ -1273,7 +1355,6 @@ if (
           message.channel
         );
 
-
       } catch (err) {
 
         console.error(
@@ -1282,7 +1363,9 @@ if (
         );
 
 
-        // Allow retry
+        // -----------------------------------------------------
+        // ALLOW RETRY
+        // -----------------------------------------------------
         waitingForDoors.add(
           message.channelId
         );
@@ -1294,7 +1377,9 @@ if (
             `⚠️ Dionysius tripped over the doors. 😭\n` +
             `Try **OPEN THE DOORS DIONYSIUS** again.`
 
-        }).catch(() => {});
+        }).catch(
+          () => {}
+        );
 
       }
 
@@ -1304,11 +1389,13 @@ if (
     }
 
 
-    // ---------------------------------------------------------
+    // =========================================================
     // 🔢 OPEN DOOR BY NUMBER
-    // ---------------------------------------------------------
+    // =========================================================
     const doorNum =
-      parseInt(trimmed);
+      parseInt(
+        trimmed
+      );
 
 
     if (
@@ -1337,7 +1424,9 @@ if (
         content:
           `⛔ Only authorized hosts can unseal doors!`
 
-      }).catch(() => {});
+      }).catch(
+        () => {}
+      );
 
     }
 
@@ -1359,7 +1448,9 @@ if (
           `⚠️ No active hallway in this channel!\n` +
           `Use **/domain** or **/doors** first.`
 
-      }).catch(() => {});
+      }).catch(
+        () => {}
+      );
 
     }
 
@@ -1375,14 +1466,18 @@ if (
     // ---------------------------------------------------------
     // ALREADY OPEN
     // ---------------------------------------------------------
-    if (selectedDoor.used) {
+    if (
+      selectedDoor.used
+    ) {
 
       return message.reply({
 
         content:
           `🚪 Door #${doorNum} has already been unsealed! Choose another.`
 
-      }).catch(() => {});
+      }).catch(
+        () => {}
+      );
 
     }
 
@@ -1408,7 +1503,9 @@ if (
           content:
             `⚠️ Could not open this door.`
 
-        }).catch(() => {});
+        }).catch(
+          () => {}
+        );
 
       }
 
@@ -1450,7 +1547,13 @@ if (
           result.embeds,
 
         files:
-          result.files
+          result.files,
+
+        allowedMentions: {
+          users: [
+            BIRTHDAY_BOY_ID
+          ]
+        }
 
       });
 
@@ -1468,7 +1571,9 @@ if (
         content:
           `⚠️ Render failed while opening Door #${doorNum}. Please try again!`
 
-      }).catch(() => {});
+      }).catch(
+        () => {}
+      );
 
     }
 
@@ -1496,14 +1601,9 @@ client.on(
       // =======================================================
       // 🍷 /DOMAIN
       //
-      // DOES:
-      //
       // 1. Tags OLYMPIAN
       // 2. Announces Dionysius
-      // 3. WAITS for:
-      //
-      // OPEN THE DOORS DIONYSIUS
-      //
+      // 3. WAITS for the flexible door phrase
       // =======================================================
       if (
         interaction.commandName ===
@@ -1580,9 +1680,6 @@ client.on(
       // 🚪 /DOORS
       //
       // IMMEDIATELY OPENS THE DOORS
-      //
-      // NO ARRIVAL MESSAGE
-      // NO WAITING
       // =======================================================
       if (
         interaction.commandName ===
@@ -1636,16 +1733,15 @@ client.on(
 
         try {
 
-          // Open the hallway
           await openHallway(
             interaction.channel
           );
 
 
-          // Remove slash command response
           await interaction.deleteReply()
-            .catch(() => {});
-
+            .catch(
+              () => {}
+            );
 
         } catch (err) {
 
@@ -1765,13 +1861,17 @@ client.on(
       ) {
 
 
-        // Clear active hallway
+        // -----------------------------------------------------
+        // CLEAR ACTIVE HALLWAY
+        // -----------------------------------------------------
         activeChannels.delete(
           interaction.channelId
         );
 
 
-        // Clear waiting status
+        // -----------------------------------------------------
+        // CLEAR WAITING STATUS
+        // -----------------------------------------------------
         waitingForDoors.delete(
           interaction.channelId
         );
@@ -1797,7 +1897,9 @@ client.on(
       // -------------------------------------------------------
       await interaction
         .deferUpdate()
-        .catch(() => {});
+        .catch(
+          () => {}
+        );
 
 
       // -------------------------------------------------------
@@ -1925,7 +2027,13 @@ client.on(
             result.embeds,
 
           files:
-            result.files
+            result.files,
+
+          allowedMentions: {
+            users: [
+              BIRTHDAY_BOY_ID
+            ]
+          }
 
         });
 
