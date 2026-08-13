@@ -351,8 +351,6 @@ function createDionysiusArrivalMessage(guild) {
 
       `Now light it up. It’s my birthday, behave accordingly. 🕺🍇\n\n` +
 
-      `👀\n\n` +
-
       `🚪 **LET.THE.GAME.STARTS** 🚪`
     )
 
@@ -528,10 +526,6 @@ function createHallwayPayload() {
       `Welcome to the Grand Hallway.\n\n` +
 
       `🎂 **12 August = 12 mysterious doors.**\n\n` +
-
-      `✨ **6 doors lead to party games...**\n` +
-
-      `💀 **6 doors lead to chaos, tricks & madness...**\n\n` +
 
       `*Choose your door wisely, mortal...*`
     )
