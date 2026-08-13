@@ -648,7 +648,7 @@ async function openHallway(channel) {
     await channel.send({
 
       content:
-        `🍷 **THE DOORS ARE OPEN. LET THE CHAOS BEGIN.** 🚪`,
+        `**THE DOORS ARE OPEN. LET THE CHAOS BEGIN.** 🚪`,
 
       embeds: [
         payload.embed
