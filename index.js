@@ -178,11 +178,11 @@ function createDionysiusArrivalMessage() {
         .setTitle("🍷 DIONYSIUS HAS ARRIVED")
         .setDescription(
           `The birthday chaos has officially begun. 😈\n\n` +
-          `🎂 **12 August → 12 doors**\n` +
+          `Born on the 12th, so obviously I brought 12 doors\n` +
           `🎉 **6 games**\n` +
-          `💀 **6 doors of questionable life choices**\n\n` +
-          `The party is waiting...\n\n` +
-          `**Say:** \`Open the doors Dionysius\` 🚪`
+          `and **6 things I refuse to explain.** 💀🔥\n\n` +
+          `Now light it up. It’s my birthday, so behave accordingly. 🕺🍇\n\n` +
+          `**LET. GET. STARTED.**\` 🚪`
         )
         .setColor("#800020")
         .setFooter({ text: "Dionysius is watching..." })
