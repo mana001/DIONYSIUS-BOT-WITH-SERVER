@@ -1,39 +1,106 @@
 // -------------------------------------------------------------
-// 1. KEEP-ALIVE SERVER FOR RENDER (WITH SELF-PINGING)
+// 🍷 DIONYSIUS BIRTHDAY CHAOS BOT
+// -------------------------------------------------------------
+// 12 DOORS
+// 6 GAMES
+// 6 TRICKS
+//
+// Trick doors:
+// - Find the Birthday Boy
+// - Assign the nickname belonging to that exact trick
+// - Display the New Identity in the result
+// - Revert nickname after 5 minutes
+//
+// Commands:
+// /domain  -> Dionysius arrives and waits for the door phrase
+// /doors   -> Immediately opens the 12 doors
+// /leave   -> Closes the active hallway
+//
+// Chat commands:
+// OPEN THE DOORS DIONYSIUS
+// 1 through 12
+// -------------------------------------------------------------
+
+
+// -------------------------------------------------------------
+// 1. KEEP-ALIVE SERVER FOR RENDER
 // -------------------------------------------------------------
 const express = require('express');
 const https = require('https');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-  res.send('🍷 Dionysius is awake and watching!');
-});
+const PORT =
+  process.env.PORT || 3000;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+app.get(
+  '/',
+  (req, res) => {
 
-// ⏰ SELF-PING LOGIC
-const APP_URL = process.env.RENDER_EXTERNAL_URL || "";
+    res.send(
+      '🍷 Dionysius is awake and watching!'
+    );
 
-setInterval(() => {
-  if (APP_URL) {
-    https.get(APP_URL, (res) => {
-      console.log(
-        `⏰ Keep-alive ping sent to ${APP_URL} (Status: ${res.statusCode})`
-      );
-    }).on('error', (err) => {
-      console.log(`⚠️ Keep-alive ping failed: ${err.message}`);
-    });
   }
-}, 5 * 60 * 1000);
+);
+
+app.listen(
+  PORT,
+  '0.0.0.0',
+  () => {
+
+    console.log(
+      `Server listening on port ${PORT}`
+    );
+
+  }
+);
 
 
 // -------------------------------------------------------------
-// 2. DISCORD CLIENT SETUP & INTENTS
+// ⏰ RENDER SELF-PING
+// -------------------------------------------------------------
+const APP_URL =
+  process.env.RENDER_EXTERNAL_URL || "";
+
+setInterval(
+  () => {
+
+    if (!APP_URL) {
+      return;
+    }
+
+    https
+      .get(
+        APP_URL,
+        (res) => {
+
+          console.log(
+            `⏰ Keep-alive ping sent to ${APP_URL} ` +
+            `(Status: ${res.statusCode})`
+          );
+
+        }
+      )
+      .on(
+        'error',
+        (err) => {
+
+          console.log(
+            `⚠️ Keep-alive ping failed: ${err.message}`
+          );
+
+        }
+      );
+
+  },
+  5 * 60 * 1000
+);
+
+
+// -------------------------------------------------------------
+// 2. DISCORD CLIENT SETUP
 // -------------------------------------------------------------
 const {
   Client,
@@ -45,62 +112,114 @@ const {
   AttachmentBuilder
 } = require('discord.js');
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
-});
+
+const client =
+  new Client({
+
+    intents: [
+
+      GatewayIntentBits.Guilds,
+
+      GatewayIntentBits.GuildMembers,
+
+      GatewayIntentBits.GuildMessages,
+
+      GatewayIntentBits.MessageContent
+
+    ]
+
+  });
 
 
 // -------------------------------------------------------------
 // 🔐 BOT TOKEN
 // -------------------------------------------------------------
+// Put your actual token in Render:
+//
+// DISCORD_TOKEN = your_token
+//
+// DO NOT put the real token directly in this file.
+// -------------------------------------------------------------
 const BOT_TOKEN =
-  process.env.DISCORD_TOKEN || "PASTE_YOUR_BOT_TOKEN_HERE";
+  process.env.DISCORD_TOKEN ||
+  "PASTE_YOUR_BOT_TOKEN_HERE";
 
 
 // -------------------------------------------------------------
-// 👑 PERMISSIONS CONFIGURATION
+// 3. PERMISSIONS CONFIGURATION
 // -------------------------------------------------------------
-const OWNER_ID = "726748866023784490";
-const BIRTHDAY_BOY_ID = "726748866023784490";
-const REQUIRED_ROLE_NAME = "HOST B";
 
-// 🏛️ ROLE NAME TO TAG
-const OLYMPIANS_ROLE_NAME = "OLYMPIAN";
+const OWNER_ID =
+  "726748866023784490";
 
-function isAuthorized(member, user) {
+
+const BIRTHDAY_BOY_ID =
+  "726748866023784490";
+
+
+const REQUIRED_ROLE_NAME =
+  "HOST B";
+
+
+const OLYMPIANS_ROLE_NAME =
+  "OLYMPIAN";
+
+
+// -------------------------------------------------------------
+// 🔐 AUTHORIZATION CHECK
+// -------------------------------------------------------------
+function isAuthorized(
+  member,
+  user
+) {
 
   // Owner always has permission
-  if (user && user.id === OWNER_ID) {
+  if (
+    user &&
+    user.id === OWNER_ID
+  ) {
+
     return true;
+
   }
+
 
   // HOST B role has permission
-  if (member && member.roles) {
+  if (
+    member &&
+    member.roles
+  ) {
+
     return member.roles.cache.some(
-      role => role.name === REQUIRED_ROLE_NAME
+      role =>
+        role.name ===
+        REQUIRED_ROLE_NAME
     );
+
   }
 
+
   return false;
+
 }
 
 
 // -------------------------------------------------------------
-// 3. LOCAL ASSETS & GAME DATA
+// 4. ASSETS & GAME DATA
+// -------------------------------------------------------------
+//
 // 6 GAMES + 6 TRICKS = 12 DOORS
 // -------------------------------------------------------------
+
 const ASSETS = {
 
-  HALLWAY_IMAGE: path.join(
-    __dirname,
-    'assets',
-    'hallway.png'
-  ),
+  HALLWAY_IMAGE:
+    path.join(
+      __dirname,
+      'assets',
+      'hallway.png'
+    ),
+
 
   // -----------------------------------------------------------
   // 💀 6 TRICKS
@@ -108,78 +227,114 @@ const ASSETS = {
   TRICKS: [
 
     {
-      nickname: "GRANPA CHASER 👴",
-      image: null,
-      gif: path.join(
-        __dirname,
-        'assets',
-        'gif4.gif'
-      )
+      nickname:
+        "GRANPA CHASER 👴",
+
+      image:
+        null,
+
+      gif:
+        path.join(
+          __dirname,
+          'assets',
+          'gif4.gif'
+        )
     },
 
-    {
-      nickname: "FOSTER FAIL 🥀",
-      image: path.join(
-        __dirname,
-        'assets',
-        'img1.png'
-      ),
-      gif: path.join(
-        __dirname,
-        'assets',
-        'gif5.gif'
-      )
-    },
 
     {
-      nickname: "ROBERT CARTER FELONI",
-      image: path.join(
-        __dirname,
-        'assets',
-        'img2.png'
-      ),
-      gif: path.join(
-        __dirname,
-        'assets',
-        'gif1.gif'
-      )
+      nickname:
+        "FOSTER FAIL 🥀",
+
+      image:
+        path.join(
+          __dirname,
+          'assets',
+          'img1.png'
+        ),
+
+      gif:
+        path.join(
+          __dirname,
+          'assets',
+          'gif5.gif'
+        )
     },
 
-    {
-      nickname: "Goblin Snack 🥒",
-      image: path.join(
-        __dirname,
-        'assets',
-        'img3.png'
-      ),
-      gif: path.join(
-        __dirname,
-        'assets',
-        'gif7.gif'
-      )
-    },
 
     {
-      nickname: "THE REAL RAG DOLL 🪆",
-      image: null,
-      gif: path.join(
-        __dirname,
-        'assets',
-        'gif2.gif'
-      )
+      nickname:
+        "ROBERT CARTER FELONI",
+
+      image:
+        path.join(
+          __dirname,
+          'assets',
+          'img2.png'
+        ),
+
+      gif:
+        path.join(
+          __dirname,
+          'assets',
+          'gif1.gif'
+        )
     },
 
+
     {
-      nickname: "Sir Shits-A-Lot",
-      image: null,
-      gif: path.join(
-        __dirname,
-        'assets',
-        'gif3.webp'
-      )
+      nickname:
+        "Goblin Snack 🥒",
+
+      image:
+        path.join(
+          __dirname,
+          'assets',
+          'img3.png'
+        ),
+
+      gif:
+        path.join(
+          __dirname,
+          'assets',
+          'gif7.gif'
+        )
+    },
+
+
+    {
+      nickname:
+        "THE REAL RAG DOLL 🪆",
+
+      image:
+        null,
+
+      gif:
+        path.join(
+          __dirname,
+          'assets',
+          'gif2.gif'
+        )
+    },
+
+
+    {
+      nickname:
+        "Sir Shits-A-Lot",
+
+      image:
+        null,
+
+      gif:
+        path.join(
+          __dirname,
+          'assets',
+          'gif3.webp'
+        )
     }
 
   ]
+
 };
 
 
@@ -205,156 +360,210 @@ const TRICK_QUOTES = [
 const GAMES_LIST = [
 
   {
-    name: "EMOJI STORY 🎭",
+    name:
+      "EMOJI STORY 🎭",
 
     description:
       "Tell a short story using **ONLY EMOJIS**. Vagg has to guess what happened!",
 
-    image: null,
+    image:
+      null,
 
-    gif: path.join(
-      __dirname,
-      'assets',
-      'gif8.gif'
-    )
+    gif:
+      path.join(
+        __dirname,
+        'assets',
+        'gif8.gif'
+      )
   },
 
+
   {
-    name: "HOW WELL DO YOU KNOW YOUR CLICK? 👥",
+    name:
+      "HOW WELL DO YOU KNOW YOUR CLICK? 👥",
 
     description:
       "You have to answer questions about your click!",
 
-    image: null,
+    image:
+      null,
 
-    gif: path.join(
-      __dirname,
-      'assets',
-      'gif9.gif'
-    )
+    gif:
+      path.join(
+        __dirname,
+        'assets',
+        'gif9.gif'
+      )
   },
 
+
   {
-    name: "FACT OR FICTION? 📜",
+    name:
+      "FACT OR FICTION? 📜",
 
     description:
       "WE TELL YOU A FACT AND YOU HAVE TO GUESS IF IT'S REAL OR NOT!",
 
-    image: null,
+    image:
+      null,
 
-    gif: path.join(
-      __dirname,
-      'assets',
-      'gif10.webp'
-    )
+    gif:
+      path.join(
+        __dirname,
+        'assets',
+        'gif10.webp'
+      )
   },
 
+
   {
-    name: "HOT SEAT 🔥",
+    name:
+      "HOT SEAT 🔥",
 
     description:
       "You are on the Hot Seat! ANSWER THE QUESTION WITH THE FIRST PERSON WHO COMES TO MIND! IT'S HOT HOT🌡🛀🔥🌶",
 
-    image: null,
+    image:
+      null,
 
-    gif: path.join(
-      __dirname,
-      'assets',
-      'gif11.webp'
-    )
+    gif:
+      path.join(
+        __dirname,
+        'assets',
+        'gif11.webp'
+      )
   },
 
+
   {
-    name: "WHO SAID IT? 🗣️",
+    name:
+      "WHO SAID IT? 🗣️",
 
     description:
       "The host will show you a random out-of-context quote from the server history. Guess who said it!",
 
-    image: null,
+    image:
+      null,
 
-    gif: path.join(
-      __dirname,
-      'assets',
-      'gif12.gif'
-    )
+    gif:
+      path.join(
+        __dirname,
+        'assets',
+        'gif12.gif'
+      )
   },
 
+
   {
-    name: "WOULD YOU RATHER? 🤔",
+    name:
+      "WOULD YOU RATHER? 🤔",
 
     description:
       "Choose between two difficult or hilarious dilemmas and defend your choice!",
 
-    image: null,
+    image:
+      null,
 
-    gif: path.join(
-      __dirname,
-      'assets',
-      'gif13.gif'
-    )
+    gif:
+      path.join(
+        __dirname,
+        'assets',
+        'gif13.gif'
+      )
   }
 
 ];
 
 
 // -------------------------------------------------------------
-// 🗂️ ACTIVE CHANNEL DATA
+// 5. ACTIVE CHANNEL DATA
 // -------------------------------------------------------------
-const activeChannels = new Map();
 
-// Channels where /domain has been used
-// and Dionysius is waiting for the door phrase
-const waitingForDoors = new Set();
+const activeChannels =
+  new Map();
 
 
+const waitingForDoors =
+  new Set();
+
+
 // -------------------------------------------------------------
-// 🍷 FIND THE OLYMPIAN ROLE
+// 🍷 FIND OLYMPIAN ROLE
 // -------------------------------------------------------------
-function getOlympianRole(guild) {
+function getOlympianRole(
+  guild
+) {
 
   if (!guild) {
     return null;
   }
 
-  return guild.roles.cache.find(
-    role => role.name === OLYMPIANS_ROLE_NAME
-  ) || null;
+  return (
+    guild.roles.cache.find(
+      role =>
+        role.name ===
+        OLYMPIANS_ROLE_NAME
+    ) || null
+  );
+
 }
 
 
 // -------------------------------------------------------------
 // 🍷 DIONYSIUS ARRIVAL MESSAGE
 // -------------------------------------------------------------
-function createDionysiusArrivalMessage(guild) {
+function createDionysiusArrivalMessage(
+  guild
+) {
 
-  const olympianRole = getOlympianRole(guild);
+  const olympianRole =
+    getOlympianRole(
+      guild
+    );
 
-  const content = olympianRole
-    ? `<@&${olympianRole.id}>`
-    : `🏛️ **OLYMPIAN**`;
 
-  const embed = new EmbedBuilder()
+  const content =
+    olympianRole
 
-    .setTitle("🍷 DIONYSIUS HAS ARRIVED")
+      ? `<@&${olympianRole.id}>`
 
-    .setDescription(
-      `The birthday chaos has officially begun. 😈\n\n` +
+      : `🏛️ **OLYMPIAN**`;
 
-      `🎂 Born on the **12th**, so obviously I brought **12 doors**.\n\n` +
 
-      `🎉 **6 games**\n` +
-      `💀 **6 things I refuse to explain**\n\n` +
+  const embed =
+    new EmbedBuilder()
 
-      `Now light it up. It’s my birthday, behave accordingly. 🕺🍇\n\n` +
+      .setTitle(
+        "🍷 DIONYSIUS HAS ARRIVED"
+      )
 
-      `🚪 **LET.THE.GAME.STARTS** 🚪`
-    )
+      .setDescription(
 
-    .setColor("#800020")
+        `The birthday chaos has officially begun. 😈\n\n` +
 
-    .setFooter({
-      text: "Dionysius is watching..."
-    });
+        `🎂 Born on the **12th**, so obviously I brought **12 doors**.\n\n` +
+
+        `🎉 **6 games**\n` +
+
+        `💀 **6 things I refuse to explain**\n\n` +
+
+        `Now light it up. It’s my birthday, behave accordingly. 🕺🍇\n\n` +
+
+        `🚪 **LET.THE.GAME.STARTS** 🚪`
+
+      )
+
+      .setColor(
+        "#800020"
+      )
+
+      .setFooter({
+
+        text:
+          "Dionysius is watching..."
+
+      });
+
 
   return {
 
@@ -364,145 +573,209 @@ function createDionysiusArrivalMessage(guild) {
       embed
     ],
 
-    allowedMentions: olympianRole
-      ? {
-          roles: [
-            olympianRole.id
-          ]
-        }
-      : {
-          parse: []
-        }
+    allowedMentions:
+      olympianRole
+
+        ? {
+            roles: [
+              olympianRole.id
+            ]
+          }
+
+        : {
+            parse: []
+          }
 
   };
+
 }
 
 
 // -------------------------------------------------------------
-// 🚪 CREATE THE 12-DOOR HALLWAY
+// 6. CREATE THE 12-DOOR HALLWAY
 // -------------------------------------------------------------
 function createHallwayPayload() {
 
   const doors = [];
 
 
-  // -----------------------------------------------------------
-  // DOOR 1
-  // -----------------------------------------------------------
+  // Door 1
   doors[0] = {
-    type: 'GAME',
-    data: GAMES_LIST[0],
-    used: false
+
+    type:
+      'GAME',
+
+    data:
+      GAMES_LIST[0],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 2
-  // -----------------------------------------------------------
+  // Door 2
   doors[1] = {
-    type: 'GAME',
-    data: GAMES_LIST[1],
-    used: false
+
+    type:
+      'GAME',
+
+    data:
+      GAMES_LIST[1],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 3
-  // -----------------------------------------------------------
+  // Door 3
   doors[2] = {
-    type: 'TRICK',
-    data: ASSETS.TRICKS[0],
-    used: false
+
+    type:
+      'TRICK',
+
+    data:
+      ASSETS.TRICKS[0],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 4
-  // -----------------------------------------------------------
+  // Door 4
   doors[3] = {
-    type: 'GAME',
-    data: GAMES_LIST[2],
-    used: false
+
+    type:
+      'GAME',
+
+    data:
+      GAMES_LIST[2],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 5
-  // -----------------------------------------------------------
+  // Door 5
   doors[4] = {
-    type: 'TRICK',
-    data: ASSETS.TRICKS[1],
-    used: false
+
+    type:
+      'TRICK',
+
+    data:
+      ASSETS.TRICKS[1],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 6
-  // -----------------------------------------------------------
+  // Door 6
   doors[5] = {
-    type: 'TRICK',
-    data: ASSETS.TRICKS[2],
-    used: false
+
+    type:
+      'TRICK',
+
+    data:
+      ASSETS.TRICKS[2],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 7
-  // -----------------------------------------------------------
+  // Door 7
   doors[6] = {
-    type: 'GAME',
-    data: GAMES_LIST[3],
-    used: false
+
+    type:
+      'GAME',
+
+    data:
+      GAMES_LIST[3],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 8
-  // -----------------------------------------------------------
+  // Door 8
   doors[7] = {
-    type: 'TRICK',
-    data: ASSETS.TRICKS[3],
-    used: false
+
+    type:
+      'TRICK',
+
+    data:
+      ASSETS.TRICKS[3],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 9
-  // -----------------------------------------------------------
+  // Door 9
   doors[8] = {
-    type: 'TRICK',
-    data: ASSETS.TRICKS[4],
-    used: false
+
+    type:
+      'TRICK',
+
+    data:
+      ASSETS.TRICKS[4],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 10
-  // -----------------------------------------------------------
+  // Door 10
   doors[9] = {
-    type: 'GAME',
-    data: GAMES_LIST[4],
-    used: false
+
+    type:
+      'GAME',
+
+    data:
+      GAMES_LIST[4],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 11
-  // -----------------------------------------------------------
+  // Door 11
   doors[10] = {
-    type: 'GAME',
-    data: GAMES_LIST[5],
-    used: false
+
+    type:
+      'GAME',
+
+    data:
+      GAMES_LIST[5],
+
+    used:
+      false
+
   };
 
 
-  // -----------------------------------------------------------
-  // DOOR 12
-  // -----------------------------------------------------------
+  // Door 12
   doors[11] = {
-    type: 'TRICK',
-    data: ASSETS.TRICKS[5],
-    used: false
+
+    type:
+      'TRICK',
+
+    data:
+      ASSETS.TRICKS[5],
+
+    used:
+      false
+
   };
 
 
@@ -518,71 +791,97 @@ function createHallwayPayload() {
   // -----------------------------------------------------------
   // HALLWAY EMBED
   // -----------------------------------------------------------
-  const hallwayEmbed = new EmbedBuilder()
+  const hallwayEmbed =
+    new EmbedBuilder()
 
-    .setTitle(
-      "🍷 DOMAIN OF DIONYSIUS 🎭"
-    )
+      .setTitle(
+        "🍷 DOMAIN OF DIONYSIUS 🎭"
+      )
 
-    .setDescription(
-      `Welcome to the Grand Hallway.\n\n` +
+      .setDescription(
 
-      `🎂 **12 August = 12 mysterious doors.**\n\n` +
+        `Welcome to the Grand Hallway.\n\n` +
 
-      `*Choose your door wisely, mortal...*`
-    )
+        `🎂 **12 August = 12 mysterious doors.**\n\n` +
 
-    .setColor("#800020")
+        `*Choose your door wisely, mortal...*`
 
-    .setImage(
-      `attachment://${path.basename(
-        ASSETS.HALLWAY_IMAGE
-      )}`
-    )
+      )
 
-    .setFooter({
-      text: "Dionysius is watching"
-    });
+      .setColor(
+        "#800020"
+      )
+
+      .setImage(
+        `attachment://${path.basename(
+          ASSETS.HALLWAY_IMAGE
+        )}`
+      )
+
+      .setFooter({
+
+        text:
+          "Dionysius is watching"
+
+      });
 
 
   // -----------------------------------------------------------
   // BUTTON ROWS
   // -----------------------------------------------------------
-  const row1 = new ActionRowBuilder();
-  const row2 = new ActionRowBuilder();
-  const row3 = new ActionRowBuilder();
+  const row1 =
+    new ActionRowBuilder();
+
+  const row2 =
+    new ActionRowBuilder();
+
+  const row3 =
+    new ActionRowBuilder();
 
 
-  for (let i = 0; i < 12; i++) {
+  for (
+    let i = 0;
+    i < 12;
+    i++
+  ) {
 
-    const button = new ButtonBuilder()
+    const button =
+      new ButtonBuilder()
 
-      .setCustomId(
-        `door_${i}`
-      )
+        .setCustomId(
+          `door_${i}`
+        )
 
-      .setLabel(
-        `Door ${i + 1}`
-      )
+        .setLabel(
+          `Door ${i + 1}`
+        )
 
-      .setEmoji("🚪")
+        .setEmoji(
+          "🚪"
+        )
 
-      .setStyle(
-        ButtonStyle.Primary
-      );
+        .setStyle(
+          ButtonStyle.Primary
+        );
 
 
     if (i < 5) {
 
-      row1.addComponents(button);
+      row1.addComponents(
+        button
+      );
 
     } else if (i < 10) {
 
-      row2.addComponents(button);
+      row2.addComponents(
+        button
+      );
 
     } else {
 
-      row3.addComponents(button);
+      row3.addComponents(
+        button
+      );
 
     }
 
@@ -603,7 +902,9 @@ function createHallwayPayload() {
         'Leave / Stop'
       )
 
-      .setEmoji('🍷')
+      .setEmoji(
+        '🍷'
+      )
 
       .setStyle(
         ButtonStyle.Danger
@@ -617,7 +918,8 @@ function createHallwayPayload() {
 
   return {
 
-    embed: hallwayEmbed,
+    embed:
+      hallwayEmbed,
 
     components: [
       row1,
@@ -632,13 +934,16 @@ function createHallwayPayload() {
     ]
 
   };
+
 }
 
 
 // -------------------------------------------------------------
-// 🚪 OPEN HALLWAY
+// 7. OPEN HALLWAY
 // -------------------------------------------------------------
-async function openHallway(channel) {
+async function openHallway(
+  channel
+) {
 
   const payload =
     createHallwayPayload();
@@ -692,11 +997,12 @@ async function openHallway(channel) {
 
 
   return hallwayMessage;
+
 }
 
 
 // -------------------------------------------------------------
-// CORE DOOR UNLOCK LOGIC
+// 8. CORE DOOR UNLOCK LOGIC
 // -------------------------------------------------------------
 async function processDoorUnlock(
   session,
@@ -706,20 +1012,30 @@ async function processDoorUnlock(
 ) {
 
   const selectedDoor =
-    session.doors[doorIndex];
+    session.doors[
+      doorIndex
+    ];
 
 
-  if (selectedDoor.used) {
+  if (
+    selectedDoor.used
+  ) {
 
     return {
-      success: false,
-      reason: "ALREADY_OPEN"
+
+      success:
+        false,
+
+      reason:
+        "ALREADY_OPEN"
+
     };
 
   }
 
 
   const embeds = [];
+
   const files = [];
 
 
@@ -727,7 +1043,8 @@ async function processDoorUnlock(
   // 🎉 GAME DOOR
   // ===========================================================
   if (
-    selectedDoor.type === 'GAME'
+    selectedDoor.type ===
+    'GAME'
   ) {
 
     const game =
@@ -751,17 +1068,24 @@ async function processDoorUnlock(
 
         )
 
-        .setColor("#FFD700")
+        .setColor(
+          "#FFD700"
+        )
 
         .setFooter({
-          text: "Let the festivities begin!"
+
+          text:
+            "Let the festivities begin!"
+
         });
 
 
     // ---------------------------------------------------------
     // GAME IMAGE
     // ---------------------------------------------------------
-    if (game.image) {
+    if (
+      game.image
+    ) {
 
       const imgName =
         path.basename(
@@ -791,7 +1115,9 @@ async function processDoorUnlock(
     // ---------------------------------------------------------
     // GAME GIF
     // ---------------------------------------------------------
-    if (game.gif) {
+    if (
+      game.gif
+    ) {
 
       const gifName =
         path.basename(
@@ -802,7 +1128,9 @@ async function processDoorUnlock(
       const gifEmbed =
         new EmbedBuilder()
 
-          .setColor("#FFD700")
+          .setColor(
+            "#FFD700"
+          )
 
           .setImage(
             `attachment://${gifName}`
@@ -829,7 +1157,8 @@ async function processDoorUnlock(
   // 💀 TRICK DOOR
   // ===========================================================
   else if (
-    selectedDoor.type === 'TRICK'
+    selectedDoor.type ===
+    'TRICK'
   ) {
 
     const trickData =
@@ -837,7 +1166,7 @@ async function processDoorUnlock(
 
 
     // ---------------------------------------------------------
-    // NICKNAME FROM THE TRICK DATA
+    // 🎭 EXACT NICKNAME FOR THIS TRICK
     // ---------------------------------------------------------
     const targetNickname =
       trickData.nickname;
@@ -860,44 +1189,74 @@ async function processDoorUnlock(
 
 
     // ---------------------------------------------------------
-    // FIND BIRTHDAY BOY
+    // 🎂 FETCH BIRTHDAY BOY
     // ---------------------------------------------------------
     try {
 
       targetMember =
-        await guild.members
-          .fetch(
-            BIRTHDAY_BOY_ID
-          )
-          .catch(
-            () => null
-          );
+        await guild.members.fetch(
+          BIRTHDAY_BOY_ID
+        );
 
-    } catch (e) {
+    } catch (err) {
 
-      console.log(
-        "Could not fetch user by ID:",
-        e
+      console.error(
+        `❌ Could not fetch Birthday Boy ${BIRTHDAY_BOY_ID}:`,
+        err
       );
 
     }
 
 
     // ---------------------------------------------------------
-    // CHANGE BIRTHDAY BOY NICKNAME
+    // 🎭 CHANGE NICKNAME
     // ---------------------------------------------------------
-    if (targetMember) {
+    if (
+      targetMember
+    ) {
 
-      try {
+      oldNickname =
+        targetMember.nickname;
 
-        if (targetMember.manageable) {
 
-          oldNickname =
-            targetMember.nickname;
+      console.log(
+        `🎂 Birthday Boy found: ${targetMember.user.tag}`
+      );
 
+
+      console.log(
+        `🎭 Assigned trick nickname: ${targetNickname}`
+      );
+
+
+      console.log(
+        `🤖 Birthday Boy manageable by bot: ${targetMember.manageable}`
+      );
+
+
+      // -------------------------------------------------------
+      // BOT MUST BE HIGHER IN ROLE HIERARCHY
+      // -------------------------------------------------------
+      if (
+        !targetMember.manageable
+      ) {
+
+        console.error(
+          `❌ Cannot change nickname for ${targetMember.user.tag}.`
+        );
+
+
+        console.error(
+          `❌ Move the bot's highest role ABOVE the Birthday Boy's highest role.`
+        );
+
+      } else {
+
+        try {
 
           await targetMember.setNickname(
-            targetNickname
+            targetNickname,
+            `Dionysius trick door #${doorIndex + 1}`
           );
 
 
@@ -905,8 +1264,14 @@ async function processDoorUnlock(
             true;
 
 
+          console.log(
+            `🎭 SUCCESS: ${targetMember.user.tag} ` +
+            `is now "${targetNickname}"`
+          );
+
+
           // ---------------------------------------------------
-          // REVERT AFTER 5 MINUTES
+          // ⏱️ REVERT AFTER 5 MINUTES
           // ---------------------------------------------------
           setTimeout(
             async () => {
@@ -914,13 +1279,9 @@ async function processDoorUnlock(
               try {
 
                 const freshMember =
-                  await guild.members
-                    .fetch(
-                      BIRTHDAY_BOY_ID
-                    )
-                    .catch(
-                      () => null
-                    );
+                  await guild.members.fetch(
+                    BIRTHDAY_BOY_ID
+                  );
 
 
                 if (
@@ -929,7 +1290,8 @@ async function processDoorUnlock(
                 ) {
 
                   await freshMember.setNickname(
-                    oldNickname
+                    oldNickname,
+                    `Dionysius trick door #${doorIndex + 1} expired`
                   );
 
 
@@ -939,10 +1301,12 @@ async function processDoorUnlock(
 
                 }
 
-              } catch (revertErr) {
+              } catch (
+                revertErr
+              ) {
 
-                console.log(
-                  "Failed to revert nickname:",
+                console.error(
+                  `❌ Failed to revert nickname:`,
                   revertErr
                 );
 
@@ -952,28 +1316,30 @@ async function processDoorUnlock(
             5 * 60 * 1000
           );
 
-        } else {
+        } catch (
+          nicknameErr
+        ) {
 
-          console.log(
-            "❌ Target member is not manageable."
+          console.error(
+            `❌ Discord rejected nickname change:`,
+            nicknameErr
           );
 
         }
 
-      } catch (err) {
-
-        console.log(
-          "Failed to change nickname:",
-          err
-        );
-
       }
+
+    } else {
+
+      console.error(
+        `❌ Birthday Boy ${BIRTHDAY_BOY_ID} was not found.`
+      );
 
     }
 
 
     // ---------------------------------------------------------
-    // RANDOM QUOTE
+    // 💬 RANDOM QUOTE
     // ---------------------------------------------------------
     const randomQuote =
       TRICK_QUOTES[
@@ -992,7 +1358,17 @@ async function processDoorUnlock(
 
 
     // ---------------------------------------------------------
-    // TRICK EMBED
+    // 💀 TRICK RESULT EMBED
+    // ---------------------------------------------------------
+    //
+    // IMPORTANT:
+    //
+    // The New Identity is based on trickData.nickname,
+    // NOT on nickChanged.
+    //
+    // This means the result will still tell everyone which
+    // identity the trick assigned even if Discord prevents
+    // the actual nickname change because of role hierarchy.
     // ---------------------------------------------------------
     const trickEmbed =
       new EmbedBuilder()
@@ -1014,31 +1390,27 @@ async function processDoorUnlock(
           }\n\n` +
 
           (
+            targetMember
 
-            nickChanged
+              ? `🎭 **New Identity:** ${birthdayBoyMention} is now known as **${targetNickname}**!`
 
-              ? `🎭 **New Identity:** ${birthdayBoyMention} is now known as **${targetNickname}** for 5 minutes!`
-
-              : `🎭 **Fate:** Dionysius laughs at your foolishness!`
+              : `🎭 **New Identity:** Birthday Boy could not be found, but the assigned identity is **${targetNickname}**!`
 
           )
 
         )
 
-        .setColor("#FF0000");
+        .setColor(
+          "#FF0000"
+        );
 
 
     // ---------------------------------------------------------
-    // ALLOW DISCORD TO MENTION BIRTHDAY BOY
+    // 🖼️ TRICK IMAGE
     // ---------------------------------------------------------
-    // This is important because the embed contains <@ID>.
-    // ---------------------------------------------------------
-
-
-    // ---------------------------------------------------------
-    // TRICK IMAGE
-    // ---------------------------------------------------------
-    if (trickData.image) {
+    if (
+      trickData.image
+    ) {
 
       const imgName =
         path.basename(
@@ -1061,20 +1433,25 @@ async function processDoorUnlock(
 
 
     // ---------------------------------------------------------
-    // TRICK GIF
+    // 🎞️ TRICK GIF
     // ---------------------------------------------------------
-    if (trickData.gif) {
+    if (
+      trickData.gif
+    ) {
 
       const gifName =
         path.basename(
           trickData.gif
-        );
+        )
+        ;
 
 
       const gifEmbed =
         new EmbedBuilder()
 
-          .setColor("#FF0000")
+          .setColor(
+            "#FF0000"
+          )
 
           .setImage(
             `attachment://${gifName}`
@@ -1095,6 +1472,7 @@ async function processDoorUnlock(
     }
 
 
+    // Trick result first
     embeds.unshift(
       trickEmbed
     );
@@ -1110,7 +1488,7 @@ async function processDoorUnlock(
 
 
   // -----------------------------------------------------------
-  // DISABLE THAT BUTTON
+  // DISABLE THAT DOOR BUTTON
   // -----------------------------------------------------------
   session.components =
     session.components.map(
@@ -1142,7 +1520,8 @@ async function processDoorUnlock(
 
               button.setStyle(
 
-                selectedDoor.type === 'TRICK'
+                selectedDoor.type ===
+                'TRICK'
 
                   ? ButtonStyle.Danger
 
@@ -1164,11 +1543,16 @@ async function processDoorUnlock(
 
   return {
 
-    success: true,
+    success:
+      true,
 
     embeds,
 
-    files
+    files,
+
+    // Useful if you ever need to inspect whether the actual
+    // Discord nickname change succeeded.
+    nickChanged
 
   };
 
@@ -1176,7 +1560,7 @@ async function processDoorUnlock(
 
 
 // -------------------------------------------------------------
-// 4. BOT READY EVENT
+// 9. BOT READY
 // -------------------------------------------------------------
 client.once(
   'ready',
@@ -1192,21 +1576,26 @@ client.once(
       const commands = [
 
         {
-          name: 'domain',
+          name:
+            'domain',
 
           description:
             'Summon Dionysius and prepare the 12 Doors!'
         },
 
+
         {
-          name: 'doors',
+          name:
+            'doors',
 
           description:
             'Immediately open the 12 Doors!'
         },
 
+
         {
-          name: 'leave',
+          name:
+            'leave',
 
           description:
             'Make Dionysius retreat and seal the doors.'
@@ -1224,10 +1613,12 @@ client.once(
         "✅ Registered /domain, /doors, and /leave!"
       );
 
-    } catch (err) {
+    } catch (
+      err
+    ) {
 
       console.error(
-        "Failed to register slash commands:",
+        "❌ Failed to register slash commands:",
         err
       );
 
@@ -1238,37 +1629,23 @@ client.once(
 
 
 // -------------------------------------------------------------
-// 5. CHAT INPUT LISTENER
-// -------------------------------------------------------------
-//
-// Handles:
-//
-// OPEN THE DOORS DIONYSIUS
-// open the doors dionysius
-// OPEN THE DOORS DIONYSIUS 🚪
-// OPEN THE DOORS DIONYSIUS 🍷
-// OPEN THE DOORS DIONYSIUS!!!
-// Open the doors Dionysius 🚪🍷
-//
-// AND:
-//
-// 1
-// 2
-// 3
-// ...
-// 12
-//
-// Only authorized hosts can use these.
+// 10. MESSAGE CREATE
 // -------------------------------------------------------------
 client.on(
   'messageCreate',
-  async (message) => {
+  async (
+    message
+  ) => {
 
     // ---------------------------------------------------------
     // IGNORE BOT MESSAGES
     // ---------------------------------------------------------
-    if (message.author.bot) {
+    if (
+      message.author.bot
+    ) {
+
       return;
+
     }
 
 
@@ -1280,14 +1657,13 @@ client.on(
     // 🚪 FLEXIBLE DOOR COMMAND
     // =========================================================
     //
-    // Converts:
+    // Accepts:
     //
-    // OPEN THE DOORS DIONYSIUS 🚪🍷!!!
-    //
-    // into:
-    //
+    // OPEN THE DOORS DIONYSIUS
     // open the doors dionysius
-    //
+    // OPEN THE DOORS DIONYSIUS 🚪
+    // OPEN THE DOORS DIONYSIUS 🍷
+    // OPEN THE DOORS DIONYSIUS!!!
     // =========================================================
 
     const doorCommand =
@@ -1310,7 +1686,7 @@ client.on(
 
 
     // =========================================================
-    // OPEN THE DOORS
+    // 🚪 OPEN THE DOORS
     // =========================================================
     if (
       isDoorCommand &&
@@ -1342,7 +1718,7 @@ client.on(
 
 
       // -------------------------------------------------------
-      // REMOVE WAITING STATUS
+      // REMOVE WAITING STATE
       // -------------------------------------------------------
       waitingForDoors.delete(
         message.channelId
@@ -1355,7 +1731,9 @@ client.on(
           message.channel
         );
 
-      } catch (err) {
+      } catch (
+        err
+      ) {
 
         console.error(
           "❌ Failed to open the doors:",
@@ -1363,9 +1741,7 @@ client.on(
         );
 
 
-        // -----------------------------------------------------
-        // ALLOW RETRY
-        // -----------------------------------------------------
+        // Allow retry
         waitingForDoors.add(
           message.channelId
         );
@@ -1460,7 +1836,9 @@ client.on(
 
 
     const selectedDoor =
-      session.doors[doorIndex];
+      session.doors[
+        doorIndex
+      ];
 
 
     // ---------------------------------------------------------
@@ -1496,7 +1874,9 @@ client.on(
         );
 
 
-      if (!result.success) {
+      if (
+        !result.success
+      ) {
 
         return message.reply({
 
@@ -1528,10 +1908,12 @@ client.on(
 
         });
 
-      } catch (e) {
+      } catch (
+        e
+      ) {
 
         console.log(
-          "Could not update hallway buttons:",
+          "⚠️ Could not update hallway buttons:",
           e
         );
 
@@ -1550,15 +1932,19 @@ client.on(
           result.files,
 
         allowedMentions: {
+
           users: [
             BIRTHDAY_BOY_ID
           ]
+
         }
 
       });
 
 
-    } catch (err) {
+    } catch (
+      err
+    ) {
 
       console.error(
         `❌ Error opening Door #${doorNum}:`,
@@ -1582,12 +1968,13 @@ client.on(
 
 
 // -------------------------------------------------------------
-// 6. INTERACTION LISTENER
-// Slash Commands & Buttons
+// 11. INTERACTION CREATE
 // -------------------------------------------------------------
 client.on(
   'interactionCreate',
-  async (interaction) => {
+  async (
+    interaction
+  ) => {
 
 
     // =========================================================
@@ -1600,16 +1987,11 @@ client.on(
 
       // =======================================================
       // 🍷 /DOMAIN
-      //
-      // 1. Tags OLYMPIAN
-      // 2. Announces Dionysius
-      // 3. WAITS for the flexible door phrase
       // =======================================================
       if (
         interaction.commandName ===
         'domain'
       ) {
-
 
         // -----------------------------------------------------
         // AUTHORIZATION
@@ -1626,7 +2008,8 @@ client.on(
             content:
               `⛔ You do not have permission to control Dionysius!`,
 
-            ephemeral: true
+            ephemeral:
+              true
 
           });
 
@@ -1642,7 +2025,7 @@ client.on(
 
 
         // -----------------------------------------------------
-        // SET WAITING MODE
+        // WAIT FOR DOOR COMMAND
         // -----------------------------------------------------
         waitingForDoors.add(
           interaction.channelId
@@ -1650,7 +2033,7 @@ client.on(
 
 
         // -----------------------------------------------------
-        // CREATE ARRIVAL MESSAGE
+        // CREATE ARRIVAL
         // -----------------------------------------------------
         const arrivalMessage =
           createDionysiusArrivalMessage(
@@ -1678,14 +2061,11 @@ client.on(
 
       // =======================================================
       // 🚪 /DOORS
-      //
-      // IMMEDIATELY OPENS THE DOORS
       // =======================================================
       if (
         interaction.commandName ===
         'doors'
       ) {
-
 
         // -----------------------------------------------------
         // AUTHORIZATION
@@ -1702,7 +2082,8 @@ client.on(
             content:
               `⛔ You do not have permission to control Dionysius!`,
 
-            ephemeral: true
+            ephemeral:
+              true
 
           });
 
@@ -1738,12 +2119,15 @@ client.on(
           );
 
 
-          await interaction.deleteReply()
+          await interaction
+            .deleteReply()
             .catch(
               () => {}
             );
 
-        } catch (err) {
+        } catch (
+          err
+        ) {
 
           console.error(
             "❌ Failed to open hallway:",
@@ -1774,7 +2158,6 @@ client.on(
         'leave'
       ) {
 
-
         // -----------------------------------------------------
         // AUTHORIZATION
         // -----------------------------------------------------
@@ -1790,7 +2173,8 @@ client.on(
             content:
               `⛔ You do not have permission to control Dionysius!`,
 
-            ephemeral: true
+            ephemeral:
+              true
 
           });
 
@@ -1829,7 +2213,6 @@ client.on(
       interaction.isButton()
     ) {
 
-
       // -------------------------------------------------------
       // AUTHORIZATION
       // -------------------------------------------------------
@@ -1845,7 +2228,8 @@ client.on(
           content:
             `⛔ Only authorized hosts can unseal doors!`,
 
-          ephemeral: true
+          ephemeral:
+            true
 
         });
 
@@ -1853,25 +2237,18 @@ client.on(
 
 
       // =======================================================
-      // 🍷 LEAVE / STOP BUTTON
+      // 🍷 LEAVE BUTTON
       // =======================================================
       if (
         interaction.customId ===
         'bot_leave'
       ) {
 
-
-        // -----------------------------------------------------
-        // CLEAR ACTIVE HALLWAY
-        // -----------------------------------------------------
         activeChannels.delete(
           interaction.channelId
         );
 
 
-        // -----------------------------------------------------
-        // CLEAR WAITING STATUS
-        // -----------------------------------------------------
         waitingForDoors.delete(
           interaction.channelId
         );
@@ -1883,9 +2260,11 @@ client.on(
             `🍷 **Dionysius has retreated!**\n\n` +
             `The doors are sealed. The chaos is temporarily contained. 😈`,
 
-          embeds: [],
+          embeds:
+            [],
 
-          components: []
+          components:
+            []
 
         });
 
@@ -1893,7 +2272,7 @@ client.on(
 
 
       // -------------------------------------------------------
-      // DEFER BUTTON UPDATE
+      // DEFER BUTTON
       // -------------------------------------------------------
       await interaction
         .deferUpdate()
@@ -1903,7 +2282,7 @@ client.on(
 
 
       // -------------------------------------------------------
-      // FIND ACTIVE SESSION
+      // FIND SESSION
       // -------------------------------------------------------
       const session =
         activeChannels.get(
@@ -1918,7 +2297,8 @@ client.on(
           content:
             `⚠️ There is no active hallway right now.`,
 
-          ephemeral: true
+          ephemeral:
+            true
 
         });
 
@@ -1931,7 +2311,9 @@ client.on(
       const doorIndex =
         parseInt(
           interaction.customId
-            .split('_')[1]
+            .split(
+              '_'
+            )[1]
         );
 
 
@@ -1949,7 +2331,8 @@ client.on(
           content:
             `⚠️ Invalid door.`,
 
-          ephemeral: true
+          ephemeral:
+            true
 
         });
 
@@ -1957,7 +2340,9 @@ client.on(
 
 
       const selectedDoor =
-        session.doors[doorIndex];
+        session.doors[
+          doorIndex
+        ];
 
 
       // -------------------------------------------------------
@@ -1972,7 +2357,8 @@ client.on(
           content:
             `🚪 This door has already been unsealed! Choose another.`,
 
-          ephemeral: true
+          ephemeral:
+            true
 
         });
 
@@ -1993,14 +2379,17 @@ client.on(
           );
 
 
-        if (!result.success) {
+        if (
+          !result.success
+        ) {
 
           return interaction.followUp({
 
             content:
               `⚠️ Could not open this door.`,
 
-            ephemeral: true
+            ephemeral:
+              true
 
           });
 
@@ -2008,7 +2397,7 @@ client.on(
 
 
         // -----------------------------------------------------
-        // UPDATE BUTTONS
+        // UPDATE HALLWAY BUTTONS
         // -----------------------------------------------------
         await interaction.message.edit({
 
@@ -2030,15 +2419,19 @@ client.on(
             result.files,
 
           allowedMentions: {
+
             users: [
               BIRTHDAY_BOY_ID
             ]
+
           }
 
         });
 
 
-      } catch (err) {
+      } catch (
+        err
+      ) {
 
         console.error(
           `❌ Error opening Door #${doorIndex + 1}:`,
@@ -2052,7 +2445,8 @@ client.on(
             `⚠️ Render lagged while opening Door #${doorIndex + 1}. ` +
             `The door remains available — try again!`,
 
-          ephemeral: true
+          ephemeral:
+            true
 
         });
 
@@ -2065,7 +2459,7 @@ client.on(
 
 
 // -------------------------------------------------------------
-// 7. LOGIN
+// 12. LOGIN
 // -------------------------------------------------------------
 client.login(
   BOT_TOKEN
